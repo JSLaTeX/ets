@@ -367,7 +367,6 @@ export class Template {
 			compileDebug: opts.compileDebug ?? false,
 			debug: opts.debug ?? false,
 			delimiter: opts.delimiter ?? DEFAULT_DELIMITER,
-			destructuredLocals: opts.destructuredLocals ?? [],
 			escape: opts.escape ?? xmlEscape,
 			filename: opts.filename,
 			openDelimiter: opts.openDelimiter ?? DEFAULT_OPEN_DELIMITER,
@@ -391,7 +390,6 @@ export class Template {
 		return new RegExp(str);
 	}
 
-	// eslint-disable-next-line complexity
 	async compile(): Promise<ClientFunction | TemplateFunction> {
 		let src: string;
 		let fn: ClientFunction;
@@ -423,26 +421,8 @@ export class Template {
 				throw new Error('localsName is not a valid JS identifier.');
 			}
 
-			if (options.destructuredLocals.length > 0) {
-				let destructuring =
-					'  var __locals = (' + options.localsName + ' || {}),\n';
-				for (let i = 0; i < options.destructuredLocals.length; i++) {
-					const name = options.destructuredLocals[i]!;
-					if (!JS_IDENTIFIER_REGEX.test(name)) {
-						throw new Error(
-							`destructuredLocals[${i}] is not a valid JS identifier.`
-						);
-					}
-
-					if (i > 0) {
-						destructuring += ',\n  ';
-					}
-
-					destructuring += name + ' = __locals.' + name;
-				}
-
-				prepended += destructuring + ';\n';
-			}
+			prepended += `  with (${options.localsName} ?? {}) {\n`;
+			appended += '  }\n';
 
 			appended += '  return __output;\n';
 			this.source = prepended + this.source + appended;
@@ -536,6 +516,7 @@ export class Template {
 						return fileTemplateRenderFunction(d);
 					}
 
+					console.log(fn.toString());
 					return fn(data ?? {}, escapeFn, include, rethrow);
 			  };
 

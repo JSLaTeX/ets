@@ -7,13 +7,14 @@ import { join } from 'desm';
 import * as ets from '~/index.js';
 import type { ClientFunction } from '~/types.js';
 
-function fixture(name: string) {
-	return fs.readFileSync('test/fixtures/' + name, 'utf8');
-}
-
 const users = [{ name: 'geddy' }, { name: 'neil' }, { name: 'alex' }];
 
 const fixturesPath = join(import.meta.url, '../fixtures');
+
+function fixture(name: string) {
+	return fs.readFileSync(path.join(fixturesPath, name), 'utf8');
+}
+
 const tempFolder = join(import.meta.url, '../temp');
 
 function hookStdio(
