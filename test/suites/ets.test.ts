@@ -79,19 +79,6 @@ describe('ets.compile(string, options)', () => {
 		expect(fn({ name: 'world' })).toEqual('HELLO WORLD');
 	});
 
-	test('destructuring works in strict and async mode', async () => {
-		const locals = { foo: 'bar' };
-		const value = await ets.render({
-			template: fixture('strict-destructuring.ets'),
-			data: locals,
-			options: {
-				destructuredLocals: Object.keys(locals),
-			},
-		});
-
-		expect(value).toEqual(locals.foo);
-	});
-
 	test('can compile to an async function', async () => {
 		const value = await ets.render({
 			template: '<%= await "Hi" %>',
@@ -869,15 +856,5 @@ describe('identifier validation', () => {
 				localsName: 'function(){console.log(1);return locals;}()',
 			});
 		}).rejects.toThrow(/localsName is not a valid JS identifier/);
-	});
-
-	test('invalid destructuredLocals', async () => {
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const locals = {};
-		await expect(async () => {
-			await ets.compile('<p>yay</p>', {
-				destructuredLocals: ['console.log(1); //'],
-			});
-		}).rejects.toThrow(/destructuredLocals\[0] is not a valid JS identifier/);
 	});
 });

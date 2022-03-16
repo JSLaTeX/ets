@@ -238,7 +238,7 @@ export interface ETSOptions {
 	beautify: boolean;
 
 	/**
-	 * Name to use for the object storing local variables when not using `with` or destructuring.
+	 * Name to use for the object storing local variables.
 	 *
 	 * @default ejs.localsName
 	 */

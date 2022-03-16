@@ -359,21 +359,8 @@ export class Template {
 
 	constructor(text: string, opts: Partial<ETSOptions> = {}) {
 		this.templateText = text;
-		if (
-			typeof opts.outputFunctionName !== 'string' ||
-			!JS_IDENTIFIER_REGEX.test(opts.outputFunctionName)
-		) {
-			throw new Error('outputFunctionName is not a valid JS identifier.');
-		}
 
-		if (
-			typeof opts.localsName !== 'string' ||
-			!JS_IDENTIFIER_REGEX.test(opts.localsName)
-		) {
-			throw new Error('localsName is not a valid JS identifier.');
-		}
-
-		this.options = {
+		const options = {
 			beautify: opts.beautify ?? false,
 			cache: opts.cache ?? false,
 			client: opts.client ?? false,
@@ -392,6 +379,22 @@ export class Template {
 			views: opts.views,
 		};
 
+		if (
+			typeof options.outputFunctionName !== 'undefined' &&
+			(typeof options.outputFunctionName !== 'string' ||
+				!JS_IDENTIFIER_REGEX.test(options.outputFunctionName))
+		) {
+			throw new Error('outputFunctionName is not a valid JS identifier.');
+		}
+
+		if (
+			typeof options.localsName !== 'string' ||
+			!JS_IDENTIFIER_REGEX.test(options.localsName)
+		) {
+			throw new Error('localsName is not a valid JS identifier.');
+		}
+
+		this.options = options;
 		this.regex = this.createRegex();
 	}
 
@@ -420,7 +423,12 @@ export class Template {
 			this.source = outdent`
 				var __output = "";
 				function __append(s) { if (s !== undefined && s !== null) __output += s }
-				var ${options.outputFunctionName} = __append;
+				${
+					// eslint-disable-next-line no-negated-condition
+					options.outputFunctionName !== undefined
+						? `var ${options.outputFunctionName} = __append;`
+						: ''
+				}
 				with (${options.localsName} ?? {}) {
 					(function() {
 						'use strict';
