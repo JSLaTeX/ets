@@ -1,5 +1,5 @@
 <ul>
-  <@ pets.forEach(function(pet){ @>
+  <@ for (const pet of pets) { @>
     <@- await include('pet', {pet: pet}); @>
-  <@ }); @>
+  <@ } @>
 </ul>

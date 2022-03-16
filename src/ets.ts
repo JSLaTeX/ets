@@ -275,6 +275,8 @@ function rethrow({
 		${error.message}
 	`;
 
+	console.log(error);
+
 	throw error;
 }
 
@@ -360,7 +362,7 @@ export class Template {
 			beautify: opts.beautify ?? false,
 			cache: opts.cache ?? false,
 			closeDelimiter: opts.closeDelimiter ?? DEFAULT_CLOSE_DELIMITER,
-			compileDebug: opts.compileDebug ?? false,
+			compileDebug: opts.compileDebug ?? true,
 			debug: opts.debug ?? false,
 			delimiter: opts.delimiter ?? DEFAULT_DELIMITER,
 			escape: opts.escape ?? customEscape,
@@ -507,7 +509,6 @@ export class Template {
 				return fileTemplateRenderFunction(d);
 			}
 
-			console.log(fn.toString());
 			return fn(data ?? {}, escapeFn, include, rethrow);
 		};
 

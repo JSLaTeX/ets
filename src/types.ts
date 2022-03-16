@@ -1,16 +1,3 @@
-// Type definitions for ejs 3.1
-// Project: http://ejs.co/, https://github.com/mde/ejs
-// Definitions by: Ben Liddicott <https://github.com/benliddicott>
-//                 ExE Boss <https://github.com/ExE-Boss>
-//                 Piotr Błażejewicz <https://github.com/peterblazejewicz>
-// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
-// TypeScript Version: 2.4
-/*
- * Callback for receiving data from `renderFile`.
- *
- * @param err error, if any resulted from the rendering process
- * @param str output string, is `undefined` if there is an error
- */
 export type RenderFileCallback<T> = (err: Error | null, str: string) => T;
 
 export type Data = Record<string, any>;
@@ -64,8 +51,8 @@ type RethrowProps = {
  * By default it is used to rethrow an error in a better-formatted way.
  *
  * @param props.err Error object
- * @param props.source full EJS source
- * @param props.filename file name of the EJS source
+ * @param props.source full ETS source
+ * @param props.filename file name of the ETS source
  * @param props.lineno line number of the error
  */
 export type RethrowCallback = (props: RethrowProps) => never;
@@ -102,7 +89,7 @@ export type IncluderCallback = (
 
 export interface ETSOptions {
 	/**
-	 * Log the generated JavaScript source for the EJS template to the console.
+	 * Log the generated JavaScript source for the ETS template to the console.
 	 *
 	 * @default false
 	 */
@@ -130,7 +117,7 @@ export interface ETSOptions {
 	 * The escaping function used with `<%=` construct. It is used in rendering
 	 * and is `.toString()`ed in the generation of client functions.
 	 *
-	 * @default ejs.escapeXML
+	 * @default ets.escapeXML
 	 */
 	escape: EscapeCallback;
 
@@ -142,7 +129,7 @@ export interface ETSOptions {
 
 	/**
 	 * The path to the project root. When this is set, absolute paths for includes
-	 * (/filename.ejs) will be relative to the project root.
+	 * (/filename.ets) will be relative to the project root.
 	 *
 	 * @default undefined
 	 */
@@ -153,7 +140,7 @@ export interface ETSOptions {
 	 * the difference between template code and existing delimiters. (It is recommended
 	 * to synchronize this with the closeDelimiter property.)
 	 *
-	 * @default ejs.openDelimiter
+	 * @default ets.openDelimiter
 	 */
 	openDelimiter: string;
 
@@ -162,7 +149,7 @@ export interface ETSOptions {
 	 * the difference between template code and existing delimiters. (It is recommended
 	 * to synchronize this with the openDelimiter property.)
 	 *
-	 * @default ejs.closeDelimiter
+	 * @default ets.closeDelimiter
 	 */
 	closeDelimiter: string;
 
@@ -194,7 +181,7 @@ export interface ETSOptions {
 	/**
 	 * Name to use for the object storing local variables.
 	 *
-	 * @default ejs.localsName
+	 * @default ets.localsName
 	 */
 	localsName: string;
 
@@ -207,7 +194,7 @@ export interface ETSOptions {
 	views: string[] | undefined;
 
 	/**
-	 * Custom function to handle EJS includes
+	 * Custom function to handle ETS includes
 	 */
 	includer: IncluderCallback | undefined;
 }

@@ -1,4 +1,4 @@
-ReferenceError: error.ejs:2
+ReferenceError: error.ets:2
     1| <ul>
  >> 2|   <% if (users) { %>
     3|     <p>Has users</p>

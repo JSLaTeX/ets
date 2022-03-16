@@ -731,10 +731,10 @@ describe('include()', () => {
 		const file = 'test/fixtures/include_cache.ets';
 		const options = { filename: file };
 		const out = await ets.compile(fixture('include_cache.ets'), options);
-		expect(out()).toEqual('<p>Old</p>\n');
+		expect(await out()).toEqual('<p>Old</p>\n');
 
-		fs.writeFileSync(path.join(tempFolder, '/tmp/include.ets'), '<p>New</p>');
-		expect(out()).toEqual('<p>New</p>\n');
+		fs.writeFileSync(path.join(tempFolder, 'include.ets'), '<p>New</p>');
+		expect(await out()).toEqual('<p>New</p>\n');
 	});
 
 	test('support caching', async () => {
