@@ -16,29 +16,14 @@ export type RenderFileCallback<T> = (err: Error | null, str: string) => T;
 export type Data = Record<string, any>;
 
 /**
- * This type of function is returned from `compile`, when
- * `Options.client` is false.
+ * This type of function is returned from `compile`.
  *
  * @param data an object of data to be passed into the template.
- * @return Return type depends on `Options.async`.
  */
 export type TemplateFunction = (data?: Data) => Promise<string>;
 
 /**
- * This type of function is returned from `compile`, when
- * `Options.client` is false.
- *
- * @param data an object of data to be passed into the template.
- * @return Return type depends on `Options.async`.
- */
-export type AsyncTemplateFunction = (data?: Data) => Promise<string>;
-
-/**
- * This type of function is returned from `compile`, when
- * `Options.client` is true.
- *
- *
- * This is also used internally to generate a `TemplateFunction`.
+ * Used internally to generate a `TemplateFunction`.
  *
  * @param locals an object of data to be passed into the template.
  * The name of this variable is adjustable through `localsName`.
@@ -50,29 +35,6 @@ export type AsyncTemplateFunction = (data?: Data) => Promise<string>;
  * @return Return type depends on `Options.async`.
  */
 export type ClientFunction = (
-	locals?: Data,
-	escape?: EscapeCallback,
-	include?: { async: AsyncIncludeCallback },
-	rethrow?: RethrowCallback
-) => Promise<string>;
-
-/**
- * This type of function is returned from `compile`, when
- * `Options.client` is true.
- *
- *
- * This is also used internally to generate a `TemplateFunction`.
- *
- * @param locals an object of data to be passed into the template.
- * The name of this variable is adjustable through `localsName`.
- *
- * @param escape callback used to escape variables
- * @param include callback used to include files at runtime with `include()`
- * @param rethrow callback used to handle and rethrow errors
- *
- * @return Return type depends on `Options.async`.
- */
-export type AsyncClientFunction = (
 	locals?: Data,
 	escape?: EscapeCallback,
 	include?: { async: AsyncIncludeCallback },
@@ -165,15 +127,6 @@ export interface ETSOptions {
 	 * @default false
 	 */
 	rmWhitespace: boolean;
-
-	/**
-	 * Whether or not to compile a `ClientFunction` that can be rendered
-	 * in the browser without depending on ejs.js. Otherwise, a `TemplateFunction`
-	 * will be compiled.
-	 *
-	 * @default false
-	 */
-	client: boolean;
 
 	/**
 	 * The escaping function used with `<%=` construct. It is used in rendering

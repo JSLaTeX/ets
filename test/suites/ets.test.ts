@@ -1,11 +1,9 @@
-/* eslint-disable no-eval */
 import * as process from 'node:process';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { describe, test, expect, afterEach } from 'vitest';
 import { join } from 'desm';
 import * as ets from '~/index.js';
-import type { ClientFunction } from '~/types.js';
 
 const users = [{ name: 'geddy' }, { name: 'neil' }, { name: 'alex' }];
 
@@ -36,31 +34,31 @@ function hookStdio(
 describe('ets.compile(string, options)', () => {
 	test('compile to a function', async () => {
 		const fn = await ets.compile('<p>yay</p>');
-		expect(fn()).toEqual('<p>yay</p>');
+		expect(await fn()).toEqual('<p>yay</p>');
 	});
 
 	test('empty input works', async () => {
 		const fn = await ets.compile('');
-		expect(fn()).toEqual('');
+		expect(await fn()).toEqual('');
 	});
 
 	test('throw if there are syntax errors', async () => {
 		await expect(async () => {
 			await ets.compile(fixture('fail.ets'));
-		}).rejects.toBe(true);
+		}).rejects.toBeDefined();
 	});
 
 	test('allow customizing delimiter local var', async () => {
 		let fn;
 		fn = await ets.compile('<p><?= name ?></p>', { delimiter: '?' });
 
-		expect(fn({ name: 'geddy' })).toEqual('<p>geddy</p>');
+		expect(await fn({ name: 'geddy' })).toEqual('<p>geddy</p>');
 
 		fn = await ets.compile('<p><:= name :></p>', { delimiter: ':' });
-		expect(fn({ name: 'geddy' })).toEqual('<p>geddy</p>');
+		expect(await fn({ name: 'geddy' })).toEqual('<p>geddy</p>');
 
 		fn = await ets.compile('<p><$= name $></p>', { delimiter: '$' });
-		expect(fn({ name: 'geddy' })).toEqual('<p>geddy</p>');
+		expect(await fn({ name: 'geddy' })).toEqual('<p>geddy</p>');
 	});
 
 	test('allow customizing open and close delimiters', async () => {
@@ -69,14 +67,14 @@ describe('ets.compile(string, options)', () => {
 			openDelimiter: '[',
 			closeDelimiter: ']',
 		});
-		expect(fn({ name: 'geddy' })).toEqual('<p>geddy</p>');
+		expect(await fn({ name: 'geddy' })).toEqual('<p>geddy</p>');
 	});
 
 	test('support custom escape function', async () => {
 		const customEscape = (str: string) => str?.toUpperCase() ?? '';
 
 		const fn = await ets.compile('HELLO <%= name %>', { escape: customEscape });
-		expect(fn({ name: 'world' })).toEqual('HELLO WORLD');
+		expect(await fn({ name: 'world' })).toEqual('HELLO WORLD');
 	});
 
 	test('can compile to an async function', async () => {
@@ -93,58 +91,6 @@ describe('ets.compile(string, options)', () => {
 		});
 
 		expect(func.name).toEqual('foo');
-	});
-});
-
-describe('client mode', () => {
-	test('have a working client option', async () => {
-		const fn = await ets.compile('<p><%= foo %></p>', { client: true });
-		const str = fn.toString();
-		let preFn: ClientFunction | undefined;
-		eval('preFn = ' + str);
-		expect(preFn?.({ foo: 'bar' })).toEqual('<p>bar</p>');
-	});
-
-	test('support client mode without locals', async () => {
-		const fn = await ets.compile('<p><%= "foo" %></p>', { client: true });
-		const str = fn.toString();
-		let preFn: ClientFunction | undefined;
-		eval('preFn = ' + str);
-		expect(preFn?.()).toEqual('<p>foo</p>');
-	});
-
-	test('not include rethrow() in client mode if compileDebug is false', async () => {
-		const fn = await ets.compile('<p><%= "foo" %></p>', {
-			client: true,
-			compileDebug: false,
-		});
-		// There could be a `rethrow` in the function declaration
-		expect(fn.toString().match(/rethrow/g) ?? []).length.to.be.lessThanOrEqual(
-			1
-		);
-	});
-
-	test('support custom escape function in client mode', async () => {
-		const customEscape = (str: string) => str?.toUpperCase() ?? '';
-
-		const fn = await ets.compile('HELLO <%= name %>', {
-			escape: customEscape,
-			client: true,
-		});
-		const str = fn.toString();
-		let preFn: ClientFunction | undefined;
-		eval('var preFn = ' + str);
-		expect(preFn?.({ name: 'world' })).toEqual('HELLO WORLD');
-	});
-
-	test('escape filename in errors in client mode', async () => {
-		await expect(async () => {
-			const fn = await ets.compile('<% throw new Error("whoops"); %>', {
-				client: true,
-				filename: '<script>',
-			});
-			await fn();
-		}).rejects.toThrow(/Error: &lt;script&gt;/);
 	});
 });
 
@@ -618,7 +564,7 @@ describe('include()', () => {
 	});
 
 	test('include ets fails without `filename`', async () => {
-		expect.hasAssertions()
+		expect.hasAssertions();
 		try {
 			await ets.render(fixture('include-simple.ets'));
 		} catch (error: unknown) {

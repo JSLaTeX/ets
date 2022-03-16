@@ -25,7 +25,7 @@ const JS_IDENTIFIER_REGEX = /^[a-zA-Z_$][\w$]*$/;
  * module. By default, it is {@link module:utils.cache}, a simple in-process
  * cache that grows continuously.
  */
-const cache = new LRUCache<string, ClientFunction | TemplateFunction>({
+const cache = new LRUCache<string, TemplateFunction>({
 	max: 20,
 });
 
@@ -157,8 +157,8 @@ export async function renderFile(props: RenderFileProps): Promise<string> {
 async function handleCache(
 	options: Partial<ETSOptions>,
 	template?: string
-): Promise<TemplateFunction | ClientFunction> {
-	let templateRenderFunction: TemplateFunction | ClientFunction | undefined;
+): Promise<TemplateFunction> {
+	let templateRenderFunction: TemplateFunction | undefined;
 	const { filename } = options;
 	const hasTemplate = template !== undefined;
 
@@ -198,14 +198,12 @@ Get the template function.
 If `options.cache` is `true`, then the template is cached.
 @param filePath	path for the specified file
 @param options compilation options
-@return {(TemplateFunction|ClientFunction)}
-Depending on the value of `options.client`, either type might be returned
 @static
 */
 async function includeFile(
 	filePath: string,
 	options: ETSOptions
-): Promise<ClientFunction> {
+): Promise<TemplateFunction> {
 	const opts = { ...options };
 	opts.filename = getIncludePath(filePath, opts);
 	if (typeof options.includer === 'function') {
@@ -283,20 +281,8 @@ Compile the given `str` of ets into a template function.
 */
 export async function compile(
 	template: string,
-	options: Partial<ETSOptions> & { client: true }
-): Promise<ClientFunction>;
-export async function compile(
-	template: string,
-	options: Partial<ETSOptions> & { client: false }
-): Promise<TemplateFunction>;
-export async function compile(
-	template: string,
 	options?: Partial<ETSOptions>
-): Promise<TemplateFunction | ClientFunction>;
-export async function compile(
-	template: string,
-	options?: Partial<ETSOptions>
-): Promise<TemplateFunction | ClientFunction> {
+): Promise<TemplateFunction> {
 	return new Template(template, options).compile();
 }
 
@@ -322,13 +308,15 @@ call this function with `data` being an empty object or `null`.
 export async function render(props: RenderProps): Promise<string> {
 	if (typeof props === 'string') {
 		const templateRenderFunction = await handleCache({}, props);
-		return templateRenderFunction();
+		const output = await templateRenderFunction();
+		return output;
 	} else {
 		const templateRenderFunction = await handleCache(
 			props.options ?? {},
 			props.template
 		);
-		return templateRenderFunction(props.data);
+		const output = await templateRenderFunction(props.data);
+		return output;
 	}
 }
 
@@ -363,7 +351,6 @@ export class Template {
 		const options = {
 			beautify: opts.beautify ?? false,
 			cache: opts.cache ?? false,
-			client: opts.client ?? false,
 			closeDelimiter: opts.closeDelimiter ?? DEFAULT_CLOSE_DELIMITER,
 			compileDebug: opts.compileDebug ?? false,
 			debug: opts.debug ?? false,
@@ -407,7 +394,7 @@ export class Template {
 		return new RegExp(str);
 	}
 
-	async compile(): Promise<ClientFunction | TemplateFunction> {
+	async compile(): Promise<TemplateFunction> {
 		let src: string;
 		let fn: ClientFunction;
 		const { options } = this;
@@ -461,13 +448,6 @@ export class Template {
 			src = this.source;
 		}
 
-		if (options.client) {
-			src = `escapeFn = escapeFn ?? ${escapeFn.toString()};\n` + src;
-			if (options.compileDebug) {
-				src = `rethrow = rethrow ?? ${rethrow.toString()};\n` + src;
-			}
-		}
-
 		if (options.debug) {
 			console.log(src);
 		}
@@ -484,7 +464,7 @@ export class Template {
 			fn = new Ctor(
 				options.localsName + ', escapeFn, include, rethrow',
 				src
-			) as ClientFunction;
+			) as TemplateFunction;
 		} catch (error: unknown) {
 			if (error instanceof SyntaxError) {
 				if (options.filename) {
@@ -505,29 +485,24 @@ export class Template {
 		// Return a callable function which will execute the function
 		// created by the source-code, with the passed data as locals
 		// Adds a local `include` function which allows full recursive include
-		const returnedFn = options.client
-			? fn
-			: async function (data?: Record<string, unknown>) {
-					async function includeAsync(
-						filePath: string,
-						includeData?: Record<string, unknown>
-					) {
-						let d = { ...data };
-						if (includeData) {
-							d = { ...d, ...includeData };
-						}
+		const returnedFn = async function (data?: Record<string, unknown>) {
+			async function includeAsync(
+				filePath: string,
+				includeData?: Record<string, unknown>
+			) {
+				let d = { ...data };
+				if (includeData) {
+					d = { ...d, ...includeData };
+				}
 
-						const fileTemplateRenderFunction = await includeFile(
-							filePath,
-							options
-						);
+				const fileTemplateRenderFunction = await includeFile(filePath, options);
 
-						return fileTemplateRenderFunction(d);
-					}
+				return fileTemplateRenderFunction(d);
+			}
 
-					console.log(fn.toString());
-					return fn(data ?? {}, escapeFn, { async: includeAsync }, rethrow);
-			  };
+			console.log(fn.toString());
+			return fn(data ?? {}, escapeFn, { async: includeAsync }, rethrow);
+		};
 
 		if (options.filename) {
 			const { filename } = options;
