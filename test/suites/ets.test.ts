@@ -793,3 +793,9 @@ describe('identifier validation', () => {
 		}).rejects.toThrow(/localsName is not a valid JS identifier/);
 	});
 });
+
+describe('typescript', () => {
+	test('typescript.ets', async () => {
+		await ets.render(fixture('typescript.ets'));
+	});
+});
