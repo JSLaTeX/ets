@@ -7,13 +7,15 @@ A port of [EJS](https://ejs.co) to support embedded TypeScript.
 ```typescript
 import * as ets from 'ets';
 
-console.log(await ets.render(`
+console.log(
+	await ets.render(`
   <%
     let x: string
     x = "hello";
   %>
   <%= x %>
-`));
+`)
+);
 
 // Outputs: "hello"
 ```
