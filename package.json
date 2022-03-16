@@ -5,9 +5,9 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/leonzalion/ets.git"
+		"url": "https://github.com/leonzalion/embedded-ts.git"
 	},
-	"homepage": "https://github.com/leonzalion/ets#readme",
+	"homepage": "https://github.com/leonzalion/embedded-ts#readme",
 	"author": {
 		"name": "Leon Si",
 		"email": "contact@leonzalion.com",

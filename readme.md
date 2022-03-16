@@ -1,11 +1,11 @@
-# ETS
+# Embedded TS (ETS)
 
 A port of [EJS](https://ejs.co) to support embedded TypeScript.
 
 ## Usage
 
 ```typescript
-import * as ets from 'ets';
+import * as ets from 'embedded-ts';
 
 console.log(
   await ets.render(`
