@@ -7,7 +7,7 @@ A port of [EJS](https://ejs.co) to support embedded TypeScript.
 ```typescript
 import * as ets from 'ets';
 
-console.log(ets.render(`
+console.log(await ets.render(`
   <%
     let x: string
     x = "hello";
@@ -20,7 +20,7 @@ console.log(ets.render(`
 
 ## Differences from EJS
 
-- For simplicity and consistency, all render functions are asynchronous, so there is no `async` option. This also means that `include` functions now return promises, so to include another `.ets` file, you must use `await include('path/to/ets/file')`.
+- For simplicity and consistency, all render functions are now asynchronous, so there is no `async` option. This also means that `include` functions now return promises, so to include another `.ets` file, you must use `await include('path/to/ets/file')`.
 
 - Because this package depends on `esbuild` to transpile TypeScript code, it's suboptimal to provide client-accessible functions since that would require loading `esbuild` into a browser. Thus, there is no `client` option in ETS.
 
