@@ -1,7 +1,8 @@
 /* eslint-disable no-eval */
-import * as fs from 'node:fs';
+import * as process from 'node:process';
 import * as path from 'node:path';
-import { describe, test, expect } from 'vitest';
+import * as fs from 'node:fs';
+import { describe, test, expect, afterEach } from 'vitest';
 import { join } from 'desm';
 import * as ets from '~/index.js';
 import type { ClientFunction } from '~/types.js';
@@ -13,6 +14,23 @@ function fixture(name: string) {
 const users = [{ name: 'geddy' }, { name: 'neil' }, { name: 'alex' }];
 
 const fixturesPath = join(import.meta.url, '../fixtures');
+const tempFolder = join(import.meta.url, '../temp');
+
+function hookStdio(
+	stream: NodeJS.WriteStream,
+	callback: (string: string, encoding: string, fd: unknown) => void
+) {
+	const oldWrite = stream.write;
+
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+	stream.write = function (string: string, encoding: string, fd: unknown) {
+		callback(string, encoding, fd);
+	} as any;
+
+	return function () {
+		stream.write = oldWrite;
+	};
+}
 
 describe('ets.compile(string, options)', () => {
 	test('compile to a function', async () => {
@@ -506,11 +524,11 @@ describe('exceptions', () => {
 		throw new Error('no error reported when there should be');
 	});
 
-	let unhook = null;
+	let unhook: (() => void) | undefined;
 	test('log JS source when debug is set', async () => {
 		let out = '';
 		let needToExit = false;
-		unhook = hook_stdio(process.stdout, (str) => {
+		unhook = hookStdio(process.stdout, (str) => {
 			out += str;
 			if (needToExit) {
 				return;
@@ -518,12 +536,15 @@ describe('exceptions', () => {
 
 			if (out.indexOf('__output')) {
 				needToExit = true;
-				unhook();
-				unhook = null;
-				done();
+				unhook?.();
+				unhook = undefined;
 			}
 		});
-		ets.render(fixture('hello-world.ets'), {}, { debug: true });
+
+		await ets.render({
+			template: fixture('hello-world.ets'),
+			options: { debug: true },
+		});
 	});
 
 	test('escape filename in errors', async () => {
@@ -549,24 +570,24 @@ describe('exceptions', () => {
 		}).rejects.toThrow(/Error: zooby/);
 	});
 
-	teardown(() => {
-		if (!unhook) {
+	afterEach(() => {
+		if (unhook === undefined) {
 			return;
 		}
 
 		unhook();
-		unhook = null;
+		unhook = undefined;
 	});
 });
 
-suite('rmWhitespace', () => {
-	test('works', () => {
-		const outp = ets.render(
-			fixture('rmWhitespace.ets'),
-			{},
-			{ rmWhitespace: true }
-		);
-		assert.equal(outp.replace(/\n/g, lf), fixture('rmWhitespace.html'));
+describe('rmWhitespace', () => {
+	test('works', async () => {
+		const outp = await ets.render({
+			template: fixture('rmWhitespace.ets'),
+			options: { rmWhitespace: true },
+		});
+
+		expect(outp).toEqual(fixture('rmWhitespace.html'));
 	});
 });
 
@@ -597,7 +618,7 @@ describe('include()', () => {
 		const file = 'test/fixtures/include-nested-escape.ets';
 		expect(
 			await ets.render({
-				filePath: fixture('include-nested-escape.ets'),
+				template: fixture('include-nested-escape.ets'),
 				options: { filename: file, escape },
 			})
 		).toEqual(fixture('include-nested-escape.html'));
@@ -605,17 +626,19 @@ describe('include()', () => {
 
 	test('include in expression ets', async () => {
 		const file = 'test/fixtures/include-expression.ets';
-		assert.equal(
-			ets.render(fixture('include-expression.ets'), {}, { filename: file }),
-			fixture('include-expression.html')
-		);
+		expect(
+			await ets.render({
+				template: fixture('include-expression.ets'),
+				options: { filename: file },
+			})
+		).toEqual(fixture('include-expression.html'));
 	});
 
 	test('include ets fails without `filename`', async () => {
 		try {
-			ets.render(fixture('include-simple.ets'));
-		} catch (error) {
-			assert.ok(error.message.includes('Could not find'));
+			await ets.render(fixture('include-simple.ets'));
+		} catch (error: unknown) {
+			expect((error as Error).message).to.include('Could not find');
 			return;
 		}
 
@@ -624,9 +647,9 @@ describe('include()', () => {
 
 	test('show filename when including nonexistent file', async () => {
 		try {
-			ets.render(fixture('include-nonexistent.ets'));
-		} catch (error) {
-			assert.ok(error.message.includes('nonexistent-file'));
+			await ets.render(fixture('include-nonexistent.ets'));
+		} catch (error: unknown) {
+			expect((error as Error).message).to.include('nonexistent-file');
 			return;
 		}
 
@@ -634,64 +657,59 @@ describe('include()', () => {
 	});
 
 	test('strips BOM', async () => {
-		assert.equal(
-			ets.render(
-				'<%- include("fixtures/includes/bom.ets") %>',
-				{},
-				{ filename: path.join(__dirname, 'f.ets') }
-			),
-			'<p>This is a file with BOM.</p>' + lf
-		);
+		expect(
+			await ets.render({
+				template: '<%- include("fixtures/includes/bom.ets") %>',
+				options: { filename: path.join(fixturesPath, 'f.ets') },
+			})
+		).toEqual('<p>This is a file with BOM.</p>\n');
 	});
 
 	test('include ets with locals', async () => {
 		const file = 'test/fixtures/include.ets';
-		assert.equal(
-			ets.render(
-				fixture('include.ets'),
-				{ pets: users },
-				{ filename: file, delimiter: '@' }
-			),
-			fixture('include.html')
-		);
+		expect(
+			await ets.render({
+				template: fixture('include.ets'),
+				data: { pets: users },
+				options: { filename: file, delimiter: '@' },
+			})
+		).toEqual(fixture('include.html'));
 	});
 
 	test('include ets with absolute path and locals', async () => {
 		const file = 'test/fixtures/include-abspath.ets';
-		assert.equal(
-			ets.render(
-				fixture('include-abspath.ets'),
-				{ dir: path.join(__dirname, 'fixtures'), pets: users, path },
-				{ filename: file, delimiter: '@' }
-			),
-			fixture('include.html')
-		);
+		expect(
+			await ets.render({
+				template: fixture('include-abspath.ets'),
+				data: { dir: fixturesPath, pets: users, path },
+				options: { filename: file, delimiter: '@' },
+			})
+		).toEqual(fixture('include.html'));
 	});
 
 	test('include ets with set root path', async () => {
 		const file = 'test/fixtures/include-root.ets';
-		const viewsPath = path.join(__dirname, 'fixtures');
-		assert.equal(
-			ets.render(
-				fixture('include-root.ets'),
-				{ pets: users },
-				{ filename: file, delimiter: '@', root: viewsPath }
-			),
-			fixture('include.html')
-		);
+		const viewsPath = fixturesPath;
+		expect(
+			await ets.render({
+				template: fixture('include-root.ets'),
+				data: { pets: users },
+				options: { filename: file, delimiter: '@', root: viewsPath },
+			})
+		).toEqual(fixture('include.html'));
 	});
 
 	test('include ets with custom includer function', async () => {
 		const file = 'test/fixtures/include-root.ets';
-		const inc = function (original, prev) {
-			if (original.charAt(0) === '/') {
+		const inc = function (original: string, prev: string) {
+			if (original.startsWith('/')) {
 				// original: '/include'         (windows)
 				// prev:     'D:\include.ets'   (windows)
 				return {
-					filename: path.join(__dirname, 'fixtures', original + '.ets'),
+					filename: path.join(fixturesPath, 'fixtures', original + '.ets'),
 				};
 			} else {
-				return prev;
+				return { filename: prev };
 			}
 		};
 
@@ -704,14 +722,14 @@ describe('include()', () => {
 		).toEqual(fixture('include.html'));
 	});
 
-	test('include ets with includer returning template', () => {
+	test('include ets with includer returning template', async () => {
 		const file = 'test/fixtures/include-root.ets';
-		const inc = function (original, prev) {
+		const inc = function (original: string, prev: string) {
 			// original: '/include'         (windows)
 			// prev:     'D:\include.ets'   (windows)
 			if (original === '/include') {
 				return {
-					template: '<p>Hello template!</p>' + lf,
+					template: '<p>Hello template!</p>\n',
 				};
 			} else {
 				return prev;
@@ -719,102 +737,105 @@ describe('include()', () => {
 		};
 
 		expect(
-			ets.render({
+			await ets.render({
 				template: fixture('include-root.ets'),
 				data: { pets: users },
-				options: { filename: file, delimiter: '@', includer: inc },
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+				options: { filename: file, delimiter: '@', includer: inc as any },
 			})
 		).toEqual(fixture('hello-template.html'));
 	});
 
-	test('work when nested', () => {
+	test('work when nested', async () => {
 		const file = 'test/fixtures/menu.ets';
-		assert.equal(
-			ets.render(fixture('menu.ets'), { pets: users }, { filename: file }),
-			fixture('menu.html')
-		);
+		expect(
+			await ets.render({
+				template: fixture('menu.ets'),
+				data: { pets: users },
+				options: { filename: file },
+			})
+		).toEqual(fixture('menu.html'));
 	});
 
-	test('work with a variable path', () => {
+	test('work with a variable path', async () => {
 		const file = 'test/fixtures/menu_var.ets';
 		const includePath = 'includes/menu-item';
-		assert.equal(
-			ets.render(
-				fixture('menu.ets'),
-				{ pets: users, varPath: includePath },
-				{ filename: file }
-			),
-			fixture('menu.html')
-		);
+		expect(
+			await ets.render({
+				template: fixture('menu.ets'),
+				data: { pets: users, varPath: includePath },
+				options: { filename: file },
+			})
+		).toEqual(fixture('menu.html'));
 	});
 
-	test('include arbitrary files as-is', () => {
+	test('include arbitrary files as-is', async () => {
 		const file = 'test/fixtures/include.css.ets';
-		assert.equal(
-			ets.render(
-				fixture('include.css.ets'),
-				{ pets: users },
-				{ filename: file }
-			),
-			fixture('include.css.html')
-		);
+		expect(
+			await ets.render({
+				template: fixture('include.css.ets'),
+				data: { pets: users },
+				options: { filename: file },
+			})
+		).toEqual(fixture('include.css.html'));
 	});
 
-	test('pass compileDebug to include', () => {
+	test('pass compileDebug to include', async () => {
 		const file = 'test/fixtures/include.ets';
-		let fn;
-		fn = ets.compile(fixture('include.ets'), {
+		const fn = await ets.compile(fixture('include.ets'), {
 			filename: file,
 			delimiter: '@',
 			compileDebug: false,
 		});
 		try {
 			// Render without a required variable reference
-			fn({ foo: 'asdf' });
-		} catch (error) {
-			assert.equal(error.message, 'pets is not defined');
-			assert.ok(!error.path);
+			await fn({ foo: 'asdf' });
+		} catch (error: unknown) {
+			expect((error as Error).message).toEqual('pets is not defined');
+			expect((error as { path: string }).path).toBeDefined();
 			return;
 		}
 
 		throw new Error('no error reported when there should be');
 	});
 
-	test('is dynamic', () => {
-		fs.writeFileSync(__dirname + '/tmp/include.ets', '<p>Old</p>');
+	test('is dynamic', async () => {
+		fs.writeFileSync(path.join(tempFolder, 'include.ets'), '<p>Old</p>');
 		const file = 'test/fixtures/include_cache.ets';
 		const options = { filename: file };
-		const out = ets.compile(fixture('include_cache.ets'), options);
-		assert.equal(out(), '<p>Old</p>' + lf);
+		const out = await ets.compile(fixture('include_cache.ets'), options);
+		expect(out()).toEqual('<p>Old</p>\n');
 
-		fs.writeFileSync(__dirname + '/tmp/include.ets', '<p>New</p>');
-		assert.equal(out(), '<p>New</p>' + lf);
+		fs.writeFileSync(path.join(tempFolder, '/tmp/include.ets'), '<p>New</p>');
+		expect(out()).toEqual('<p>New</p>\n');
 	});
 
-	test('support caching', () => {
-		fs.writeFileSync(__dirname + '/tmp/include.ets', '<p>Old</p>');
+	test('support caching', async () => {
+		fs.writeFileSync(path.join(tempFolder, 'include.ets'), '<p>Old</p>');
 		const file = 'test/fixtures/include_cache.ets';
 		const options = { cache: true, filename: file };
-		let out = ets.render(fixture('include_cache.ets'), {}, options);
+		let out = await ets.render({
+			template: fixture('include_cache.ets'),
+			options,
+		});
 		const expected = fixture('include_cache.html');
-		assert.equal(out, expected);
-		out = ets.render(fixture('include_cache.ets'), {}, options);
+		expect(out).toEqual(expected);
+		out = await ets.render({ template: fixture('include_cache.ets'), options });
 		// No change, still in cache
-		assert.equal(out, expected);
-		fs.writeFileSync(__dirname + '/tmp/include.ets', '<p>New</p>');
-		out = ets.render(fixture('include_cache.ets'), {}, options);
-		assert.equal(out, expected);
+		expect(out).toEqual(expected);
+		fs.writeFileSync(path.join(tempFolder, 'include.ets'), '<p>New</p>');
+		out = await ets.render({ template: fixture('include_cache.ets'), options });
+		expect(out).toEqual(expected);
 	});
 
-	test('handles errors in included file', () => {
+	test('handles errors in included file', async () => {
 		try {
-			ets.render(
-				'<%- include("fixtures/include-with-error") %>',
-				{},
-				{ filename: path.join(__dirname, 'f.ets') }
-			);
-		} catch (error) {
-			assert.ok(error.message.includes('foobar is not defined'));
+			await ets.render({
+				template: '<%- include("fixtures/include-with-error") %>',
+				options: { filename: path.join(fixturesPath, 'f.ets') },
+			});
+		} catch (error: unknown) {
+			expect((error as Error).message).to.include('foobar is not defined');
 			return;
 		}
 
@@ -832,7 +853,7 @@ describe('comments', () => {
 
 describe('identifier validation', () => {
 	test('invalid outputFunctionName', async () => {
-		expect(async () => {
+		await expect(async () => {
 			await ets.compile('<p>yay</p>', {
 				outputFunctionName: 'x;console.log(1);x',
 			});
@@ -840,17 +861,19 @@ describe('identifier validation', () => {
 	});
 
 	test('invalid localsName', async () => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const locals = {};
-		expect(async () => {
+		await expect(async () => {
 			await ets.compile('<p>yay</p>', {
 				localsName: 'function(){console.log(1);return locals;}()',
 			});
 		}).rejects.toThrow(/localsName is not a valid JS identifier/);
 	});
 
-	test('invalid destructuredLocals', () => {
+	test('invalid destructuredLocals', async () => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const locals = {};
-		expect(() => {
+		await expect(async () => {
 			await ets.compile('<p>yay</p>', {
 				destructuredLocals: ['console.log(1); //'],
 			});
