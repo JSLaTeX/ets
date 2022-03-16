@@ -12,7 +12,6 @@ import type {
 	TemplateFunction,
 } from '~/types.js';
 
-const VERSION_STRING = '1.0.0'; // require('../package.json').version;
 const DEFAULT_OPEN_DELIMITER = '<';
 const DEFAULT_CLOSE_DELIMITER = '>';
 const DEFAULT_DELIMITER = '%';
@@ -115,22 +114,28 @@ function getIncludePath(
 /**
 Render an ETS file at the given `path`.
 */
-type RenderFileProps = {
-	filePath: string;
-	data: Record<string, unknown>;
-	options: Omit<ETSOptions, 'filename'>;
-};
+type RenderFileProps =
+	| {
+			filePath: string;
+			data: Record<string, unknown>;
+			options?: Omit<Partial<ETSOptions>, 'filename'>;
+	  }
+	| string;
 
-export async function renderFile({
-	filePath,
-	data,
-	options,
-}: RenderFileProps): Promise<string> {
-	const templateRenderFunction = await handleCache({
-		...options,
-		filename: filePath,
-	});
-	return templateRenderFunction(data);
+export async function renderFile(props: RenderFileProps): Promise<string> {
+	if (typeof props === 'string') {
+		const templateRenderFunction = await handleCache({
+			filename: props,
+		});
+		return templateRenderFunction();
+	} else {
+		const { filePath, data, options } = props;
+		const templateRenderFunction = await handleCache({
+			...options,
+			filename: filePath,
+		});
+		return templateRenderFunction(data);
+	}
 }
 
 /**
@@ -284,20 +289,22 @@ export async function compile(
 ): Promise<TemplateFunction>;
 export async function compile(
 	template: string,
-	options: Partial<ETSOptions>
+	options?: Partial<ETSOptions>
 ): Promise<TemplateFunction | ClientFunction>;
 export async function compile(
 	template: string,
-	options: Partial<ETSOptions>
+	options?: Partial<ETSOptions>
 ): Promise<TemplateFunction | ClientFunction> {
 	return new Template(template, options).compile();
 }
 
-type RenderProps = {
-	template: string;
-	data: Record<string, unknown>;
-	options: Partial<ETSOptions>;
-};
+type RenderProps =
+	| {
+			template: string;
+			data?: Record<string, unknown>;
+			options?: Partial<ETSOptions>;
+	  }
+	| string;
 
 /**
 Render the given `template` of ets.
@@ -310,13 +317,17 @@ call this function with `data` being an empty object or `null`.
 @param compilation and rendering options
 @public
 */
-export async function render({
-	template,
-	data,
-	options,
-}: RenderProps): Promise<string> {
-	const templateRenderFunction = await handleCache(options, template);
-	return templateRenderFunction(data);
+export async function render(props: RenderProps): Promise<string> {
+	if (typeof props === 'string') {
+		const templateRenderFunction = await handleCache({}, props);
+		return templateRenderFunction();
+	} else {
+		const templateRenderFunction = await handleCache(
+			props.options ?? {},
+			props.template
+		);
+		return templateRenderFunction(props.data);
+	}
 }
 
 /**
@@ -736,8 +747,3 @@ export class Template {
 		}
 	}
 }
-
-/**
- * Version of ETS.
- */
-export const version = VERSION_STRING;
