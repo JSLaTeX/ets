@@ -1,1 +1,1 @@
-export { compile, render, renderFile, clearCache } from './ets.js';
+export { compile, render, renderFile } from './ets.js';

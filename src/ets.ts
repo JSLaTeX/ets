@@ -328,14 +328,6 @@ export async function render(props: RenderProps): Promise<string> {
 	}
 }
 
-/**
- * Clear intermediate JavaScript cache. Calls {@link Cache#reset}.
- * @public
- */
-export function clearCache() {
-	cache.clear();
-}
-
 const modes = {
 	EVAL: 'eval',
 	ESCAPED: 'escaped',
