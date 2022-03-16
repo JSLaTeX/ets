@@ -1,5 +1,5 @@
 {
-	"name": "ets",
+	"name": "embedded-ts",
 	"version": "0.0.0",
 	"description": "Embedded TypeScript.",
 	"license": "MIT",
@@ -37,6 +37,7 @@
 		"lint-staged": "^12.3.6",
 		"lion-git-hooks": "^1.0.7",
 		"lion-system": "^1.0.15",
+		"lionp": "^1.0.23",
 		"prettier": "^2.6.0",
 		"tsc-alias": "^1.6.4",
 		"typescript": "^4.6.2",
@@ -61,5 +62,8 @@
 		"lru-cache": "^7.5.1",
 		"outdent": "^0.8.0",
 		"xml-escape": "^1.1.0"
+	},
+	"publishConfig": {
+		"directory": "dist"
 	}
 }
