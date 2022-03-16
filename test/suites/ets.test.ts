@@ -486,7 +486,7 @@ describe('exceptions', () => {
 				template: '<% throw new Error("whoops"); %>',
 				options: { filename: '<script>' },
 			});
-		}).rejects.toThrow(/Error: &lt;script&gt;/);
+		}).rejects.toThrow(/&lt;script&gt;/);
 	});
 
 	test('filename in errors uses custom escape', async () => {
@@ -500,7 +500,7 @@ describe('exceptions', () => {
 					},
 				},
 			});
-		}).rejects.toThrow(/Error: zooby/);
+		}).rejects.toThrow(/zooby/);
 	});
 
 	afterEach(() => {
@@ -588,7 +588,7 @@ describe('include()', () => {
 	test('strips BOM', async () => {
 		expect(
 			await ets.render({
-				template: '<%- await include("fixtures/includes/bom.ets") %>',
+				template: '<%- await include("includes/bom.ets") %>',
 				options: { filename: path.join(fixturesPath, 'f.ets') },
 			})
 		).toEqual('<p>This is a file with BOM.</p>\n');
@@ -635,7 +635,7 @@ describe('include()', () => {
 				// original: '/include'         (windows)
 				// prev:     'D:\include.ets'   (windows)
 				return {
-					filename: path.join(fixturesPath, 'fixtures', original + '.ets'),
+					filename: path.join(fixturesPath, original + '.ets'),
 				};
 			} else {
 				return { filename: prev };
@@ -759,7 +759,7 @@ describe('include()', () => {
 		expect.hasAssertions();
 		try {
 			await ets.render({
-				template: '<%- await include("fixtures/include-with-error") %>',
+				template: '<%- await include("include-with-error") %>',
 				options: { filename: path.join(fixturesPath, 'f.ets') },
 			});
 		} catch (error: unknown) {

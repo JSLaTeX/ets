@@ -275,8 +275,6 @@ function rethrow({
 		${error.message}
 	`;
 
-	console.log(error);
-
 	throw error;
 }
 
