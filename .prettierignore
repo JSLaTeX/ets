@@ -1,2 +1,4 @@
 dist
 .eslintcache
+test/fixtures
+pnpm-lock.yaml
