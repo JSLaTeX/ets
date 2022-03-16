@@ -24,7 +24,7 @@ console.log(
 
 - For simplicity and consistency, all render functions are now asynchronous, so there is no `async` option. This also means that `include` functions now return promises, so to include another `.ets` file, you must use `await include('path/to/ets/file')`.
 
-- Because this package depends on `esbuild` to transpile TypeScript code, it's suboptimal to provide client-accessible functions since that would require loading `esbuild` into a browser. Thus, there is no `client` option in ETS.
+- There is no `client` option in ETS.
 
 - The `with` statement is now always used internally to expose provided data to the template. Thus, the `_with` and `destructuredLocals` options have been removed.
 
