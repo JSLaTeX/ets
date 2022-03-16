@@ -52,7 +52,7 @@ export type AsyncTemplateFunction = (data?: Data) => Promise<string>;
 export type ClientFunction = (
 	locals?: Data,
 	escape?: EscapeCallback,
-	include?: IncludeCallback,
+	include?: { async: AsyncIncludeCallback },
 	rethrow?: RethrowCallback
 ) => Promise<string>;
 
@@ -75,7 +75,7 @@ export type ClientFunction = (
 export type AsyncClientFunction = (
 	locals?: Data,
 	escape?: EscapeCallback,
-	include?: IncludeCallback,
+	include?: { async: AsyncIncludeCallback },
 	rethrow?: RethrowCallback
 ) => Promise<string>;
 
@@ -117,7 +117,10 @@ export type RethrowCallback = (props: RethrowProps) => never;
  * @param data Data passed to the template
  * @return Contents of the file requested
  */
-export type IncludeCallback = (path: string, data?: Data) => Promise<string>;
+export type AsyncIncludeCallback = (
+	path: string,
+	data?: Data
+) => Promise<string>;
 
 /**
  * An object where {@link filename} is the final parsed path or {@link template} is the content of the included template
@@ -135,7 +138,7 @@ export type IncluderResult =
 export type IncluderCallback = (
 	originalPath: string,
 	parsedPath: string
-) => IncluderResult;
+) => IncluderResult | Promise<IncluderResult>;
 
 export interface ETSOptions {
 	/**

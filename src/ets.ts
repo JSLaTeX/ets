@@ -1,10 +1,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { outdent } from 'outdent';
-import xmlEscape from 'xml-escape';
+import esbuild from 'esbuild';
 import escapeStringRegexp from 'escape-string-regexp';
 import LRUCache from 'lru-cache';
-import esbuild from 'esbuild';
+import { outdent } from 'outdent';
+import xmlEscape from 'xml-escape';
 import type {
 	ClientFunction,
 	EscapeCallback,
@@ -209,7 +209,7 @@ async function includeFile(
 	const opts = { ...options };
 	opts.filename = getIncludePath(filePath, opts);
 	if (typeof options.includer === 'function') {
-		const includerResult = options.includer(filePath, opts.filename!);
+		const includerResult = await options.includer(filePath, opts.filename!);
 		if (includerResult) {
 			if (includerResult.filename) {
 				opts.filename = includerResult.filename;
@@ -420,6 +420,13 @@ export class Template {
 		if (!this.source) {
 			this.generateSource();
 
+			const { code } = await esbuild.transform(this.source, {
+				minify: false,
+				keepNames: true,
+				loader: 'ts',
+			});
+
+			this.compileIncludes();
 			this.source = outdent`
 				var __output = "";
 				function __append(s) { if (s !== undefined && s !== null) __output += s }
@@ -430,9 +437,9 @@ export class Template {
 						: ''
 				}
 				with (${options.localsName} ?? {}) {
-					(function() {
+					await (async function() {
 						'use strict';
-						${this.source}
+						${code}
 					})();
 				}
 				return __output;
@@ -469,13 +476,6 @@ export class Template {
 			src += `\n//# sourceURL=${sanitizedFilename}\n`;
 		}
 
-		const { code } = await esbuild.transform(src, {
-			minify: false,
-			keepNames: true,
-			loader: 'ts',
-		});
-		src = code;
-
 		try {
 			Ctor = async function () {
 				/* noop */
@@ -508,7 +508,7 @@ export class Template {
 		const returnedFn = options.client
 			? fn
 			: async function (data?: Record<string, unknown>) {
-					async function include(
+					async function includeAsync(
 						filePath: string,
 						includeData?: Record<string, unknown>
 					) {
@@ -526,7 +526,7 @@ export class Template {
 					}
 
 					console.log(fn.toString());
-					return fn(data ?? {}, escapeFn, include, rethrow);
+					return fn(data ?? {}, escapeFn, { async: includeAsync }, rethrow);
 			  };
 
 		if (options.filename) {
@@ -545,6 +545,44 @@ export class Template {
 		}
 
 		return returnedFn;
+	}
+
+	/**
+	Compiles all calls to the special function `include` by prepending a top-level pre-processed include and replacing the include function with a synchronous version that references the files previously included
+	*/
+	compileIncludes() {
+		const includedFiles: string[] = [];
+
+		this.source.replace(
+			/include\(([\s\S]*?)\)/g,
+			(_match, includeString: string) => {
+				if (!includeString.startsWith("'") && includeString.startsWith('"')) {
+					throw new Error(
+						'Files included with `include()` may only be static strings. If you want to dynamically include a component, please use `await include.async()` instead.'
+					);
+				}
+
+				includedFiles.push(includeString.slice(1, -1));
+				return `__include(${includeString})`;
+			}
+		);
+
+		this.source =
+			outdent`
+				const __include = await (async () => {
+					const includedFiles = Object.fromEntries(
+						await Promise.all(
+							${JSON.stringify(includedFiles)}.map(
+								async (file) => [file, await include.async(file)]
+							)
+						)
+					);
+
+					return function include(file) {
+						return includedFiles[file];
+					}
+				})();
+			` + this.source;
 	}
 
 	generateSource() {
@@ -569,6 +607,7 @@ export class Template {
 		if (matches && matches.length > 0) {
 			for (const [index, line] of matches.entries()) {
 				// If this is an opening tag, check for closing tags
+				// eslint-disable-next-line no-warning-comments
 				// FIXME: May end up with some false positives here
 				// Better to store modes as k/v with openDelimiter + delimiter as key
 				// Then this can simply check against the map
