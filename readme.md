@@ -4,7 +4,19 @@ A port of [EJS](https://ejs.co) to support embedded TypeScript.
 
 ## Usage
 
-TODO
+```typescript
+import * as ets from 'ets';
+
+console.log(ets.render(`
+  <%
+    let x: string
+    x = "hello";
+  %>
+  <%= x %>
+`));
+
+// Outputs: "hello"
+```
 
 ## Differences from EJS
 
