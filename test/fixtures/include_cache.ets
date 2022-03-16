@@ -1,1 +1,1 @@
-<%- await include('../tmp/include') %>
+<%- await include('../temp/include') %>

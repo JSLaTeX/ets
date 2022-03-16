@@ -1,7 +1,7 @@
 import * as process from 'node:process';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import { describe, test, expect, afterEach } from 'vitest';
+import { describe, test, expect, afterEach, beforeAll } from 'vitest';
 import { join } from 'desm';
 import * as ets from '~/index.js';
 
@@ -14,6 +14,10 @@ function fixture(name: string) {
 }
 
 const tempFolder = join(import.meta.url, '../temp');
+
+beforeAll(() => {
+	fs.mkdirSync(tempFolder, { recursive: true });
+});
 
 function hookStdio(
 	stream: NodeJS.WriteStream,
