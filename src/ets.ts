@@ -359,6 +359,20 @@ export class Template {
 
 	constructor(text: string, opts: Partial<ETSOptions> = {}) {
 		this.templateText = text;
+		if (
+			typeof opts.outputFunctionName !== 'string' ||
+			!JS_IDENTIFIER_REGEX.test(opts.outputFunctionName)
+		) {
+			throw new Error('outputFunctionName is not a valid JS identifier.');
+		}
+
+		if (
+			typeof opts.localsName !== 'string' ||
+			!JS_IDENTIFIER_REGEX.test(opts.localsName)
+		) {
+			throw new Error('localsName is not a valid JS identifier.');
+		}
+
 		this.options = {
 			beautify: opts.beautify ?? false,
 			cache: opts.cache ?? false,
@@ -394,8 +408,6 @@ export class Template {
 		let src: string;
 		let fn: ClientFunction;
 		const { options } = this;
-		let prepended = '';
-		let appended = '';
 		const escapeFn = options.escape;
 		let Ctor: FunctionConstructor;
 		const sanitizedFilename = options.filename
@@ -404,28 +416,19 @@ export class Template {
 
 		if (!this.source) {
 			this.generateSource();
-			prepended += outdent`
+
+			this.source = outdent`
 				var __output = "";
 				function __append(s) { if (s !== undefined && s !== null) __output += s }
-			`;
-
-			if (options.outputFunctionName) {
-				if (!JS_IDENTIFIER_REGEX.test(options.outputFunctionName)) {
-					throw new Error('outputFunctionName is not a valid JS identifier.');
+				var ${options.outputFunctionName} = __append;
+				with (${options.localsName} ?? {}) {
+					(function() {
+						'use strict';
+						${this.source}
+					})();
 				}
-
-				prepended += `  var ${options.outputFunctionName} = __append;\n`;
-			}
-
-			if (!JS_IDENTIFIER_REGEX.test(options.localsName)) {
-				throw new Error('localsName is not a valid JS identifier.');
-			}
-
-			prepended += `  with (${options.localsName} ?? {}) {\n`;
-			appended += '  }\n';
-
-			appended += '  return __output;\n';
-			this.source = prepended + this.source + appended;
+				return __output;
+			`;
 		}
 
 		if (options.compileDebug) {
@@ -449,8 +452,6 @@ export class Template {
 				src = `rethrow = rethrow ?? ${rethrow.toString()};\n` + src;
 			}
 		}
-
-		src = '"use strict";\n' + src;
 
 		if (options.debug) {
 			console.log(src);
