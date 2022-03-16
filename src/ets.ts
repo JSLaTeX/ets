@@ -25,7 +25,9 @@ const JS_IDENTIFIER_REGEX = /^[a-zA-Z_$][\w$]*$/;
  * module. By default, it is {@link module:utils.cache}, a simple in-process
  * cache that grows continuously.
  */
-const cache = new LRUCache<string, ClientFunction | TemplateFunction>();
+const cache = new LRUCache<string, ClientFunction | TemplateFunction>({
+	max: 20,
+});
 
 /**
  * Get the path to the included file from the parent file path and the
