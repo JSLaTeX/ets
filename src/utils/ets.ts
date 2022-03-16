@@ -127,7 +127,7 @@ Render an ETS file at the given `path`.
 type RenderFileProps =
 	| {
 			filePath: string;
-			data: Record<string, unknown>;
+			data?: Record<string, unknown>;
 			options?: Omit<Partial<ETSOptions>, 'filename'>;
 	  }
 	| string;
