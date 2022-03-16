@@ -1,1 +1,0 @@
-<p>global <%= viewsText %></p>

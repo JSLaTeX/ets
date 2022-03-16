@@ -154,7 +154,7 @@ describe('ets.renderFile(path, [data], [options], [fn])', async () => {
 			data,
 			options,
 		});
-		expect(html).toEqual('<h1>fonebone</h1>');
+		expect(html).toEqual('<h1>fonebone</h1>\n');
 	});
 });
 
