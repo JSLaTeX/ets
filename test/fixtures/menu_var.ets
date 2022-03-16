@@ -1,14 +1,14 @@
-<%- include(varPath, {
+<%- await include(varPath, {
   url: '/foo'
 , title: 'Foo'
 }); -%>
 
-<%- include(varPath, {
+<%- await include(varPath, {
   url: '/bar'
 , title: 'Bar'
 }); -%>
 
-<%- include(varPath, {
+<%- await include(varPath, {
   url: '/baz'
 , title: 'Baz'
 }); -%>

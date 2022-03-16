@@ -1,1 +1,1 @@
-<@- include('/include'); @>
+<@- await include('/include'); @>

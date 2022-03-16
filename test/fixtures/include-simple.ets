@@ -1,3 +1,3 @@
 <ul>
-  <%- include('hello-world'); %>
+  <%- await include('hello-world'); %>
 </ul>

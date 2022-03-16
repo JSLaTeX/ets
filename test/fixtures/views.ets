@@ -1,1 +1,1 @@
-<div><%- include(includePath, {viewsText: 'test'}) %></div>
+<div><%- await include(includePath, {viewsText: 'test'}) %></div>

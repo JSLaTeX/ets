@@ -1,3 +1,3 @@
 <ul>
-  <%- 'ping: ' + include('hello-world').replace(/world/, 'planet'); %>
+  <%- 'ping: ' + await include('hello-world').replace(/world/, 'planet'); %>
 </ul>

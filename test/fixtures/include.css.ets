@@ -1,1 +1,1 @@
-<style><%- include('style.css', {value: 'bar'}); %></style>
+<style><%- await include('style.css', {value: 'bar'}); %></style>

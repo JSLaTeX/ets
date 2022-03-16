@@ -1,1 +1,1 @@
-<%- include('nonexistent-file'); %>
+<%- await include('nonexistent-file'); %>

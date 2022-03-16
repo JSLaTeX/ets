@@ -1,3 +1,3 @@
 <span>
-  <%- include('includes/escape'); %>
+  <%- await include('includes/escape'); %>
 </span>

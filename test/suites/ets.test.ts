@@ -225,7 +225,7 @@ describe('<%=', () => {
 				template: '<%= name %>',
 				data: { name: "The Jones's" },
 			})
-		).toEqual('The Jones&#39;s');
+		).toEqual('The Jones&apos;s');
 	});
 
 	test('should escape &foo_bar;', async () => {
@@ -328,7 +328,7 @@ describe('-%>', () => {
 		const expectedResult =
 			'<ul><li>geddy</li>\n<li>neil</li>\n<li>alex</li>\n</ul>';
 		const fn = await ets.compile(content);
-		expect(fn({ users })).toEqual(expectedResult);
+		expect(await fn({ users })).toEqual(expectedResult);
 	});
 
 	test('works with windows style', async () => {
@@ -342,7 +342,7 @@ describe('-%>', () => {
 		const expectedResult =
 			'<ul><li>geddy</li>\r\n<li>neil</li>\r\n<li>alex</li>\r\n</ul>';
 		const fn = await ets.compile(content);
-		expect(fn({ users })).toEqual(expectedResult);
+		expect(await fn({ users })).toEqual(expectedResult);
 	});
 });
 
@@ -352,7 +352,7 @@ describe('<%%', () => {
 	});
 
 	test('work without an end tag', async () => {
-		expect(ets.render('<%%')).toEqual('<%');
+		expect(await ets.render('<%%')).toEqual('<%');
 		expect(
 			await ets.render({
 				template: fixture('literal.ets'),
@@ -584,7 +584,7 @@ describe('include()', () => {
 	test('strips BOM', async () => {
 		expect(
 			await ets.render({
-				template: '<%- include("fixtures/includes/bom.ets") %>',
+				template: '<%- await include("fixtures/includes/bom.ets") %>',
 				options: { filename: path.join(fixturesPath, 'f.ets') },
 			})
 		).toEqual('<p>This is a file with BOM.</p>\n');
@@ -755,7 +755,7 @@ describe('include()', () => {
 		expect.hasAssertions();
 		try {
 			await ets.render({
-				template: '<%- include("fixtures/include-with-error") %>',
+				template: '<%- await include("fixtures/include-with-error") %>',
 				options: { filename: path.join(fixturesPath, 'f.ets') },
 			});
 		} catch (error: unknown) {
@@ -765,8 +765,8 @@ describe('include()', () => {
 });
 
 describe('comments', () => {
-	test('fully render with comments removed', () => {
-		expect(ets.render(fixture('comments.ets'))).toEqual(
+	test('fully render with comments removed', async () => {
+		expect(await ets.render(fixture('comments.ets'))).toEqual(
 			fixture('comments.html')
 		);
 	});

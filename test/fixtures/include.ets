@@ -1,5 +1,5 @@
 <ul>
   <@ pets.forEach(function(pet){ @>
-    <@- include('pet', {pet: pet}); @>
+    <@- await include('pet', {pet: pet}); @>
   <@ }); @>
 </ul>

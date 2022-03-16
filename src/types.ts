@@ -31,13 +31,11 @@ export type TemplateFunction = (data?: Data) => Promise<string>;
  * @param escape callback used to escape variables
  * @param include callback used to include files at runtime with `include()`
  * @param rethrow callback used to handle and rethrow errors
- *
- * @return Return type depends on `Options.async`.
  */
 export type ClientFunction = (
 	locals?: Data,
 	escape?: EscapeCallback,
-	include?: { async: AsyncIncludeCallback },
+	include?: AsyncIncludeCallback,
 	rethrow?: RethrowCallback
 ) => Promise<string>;
 

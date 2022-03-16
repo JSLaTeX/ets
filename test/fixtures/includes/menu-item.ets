@@ -1,1 +1,1 @@
-<li><%- include('menu/item', {url: url, title: title}); -%></li>
+<li><%- await include('menu/item', {url: url, title: title}); -%></li>

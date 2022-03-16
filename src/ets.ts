@@ -20,6 +20,14 @@ const REGEX_STRING = '(<%%|%%>|<%=|<%-|<%_|<%#|<%|%>|-%>|_%>)';
 const BOM = /^\uFEFF/;
 const JS_IDENTIFIER_REGEX = /^[a-zA-Z_$][\w$]*$/;
 
+function customEscape(value: unknown) {
+	if (value === undefined || value === null) {
+		return '';
+	}
+
+	return xmlEscape(String(value));
+}
+
 /**
  * ETS template function cache. This can be a LRU object from lru-cache NPM
  * module. By default, it is {@link module:utils.cache}, a simple in-process
@@ -355,7 +363,7 @@ export class Template {
 			compileDebug: opts.compileDebug ?? false,
 			debug: opts.debug ?? false,
 			delimiter: opts.delimiter ?? DEFAULT_DELIMITER,
-			escape: opts.escape ?? xmlEscape,
+			escape: opts.escape ?? customEscape,
 			filename: opts.filename,
 			openDelimiter: opts.openDelimiter ?? DEFAULT_OPEN_DELIMITER,
 			includer: opts.includer,
@@ -413,7 +421,6 @@ export class Template {
 				loader: 'ts',
 			});
 
-			this.compileIncludes();
 			this.source = outdent`
 				var __output = "";
 				function __append(s) { if (s !== undefined && s !== null) __output += s }
@@ -486,7 +493,7 @@ export class Template {
 		// created by the source-code, with the passed data as locals
 		// Adds a local `include` function which allows full recursive include
 		const returnedFn = async function (data?: Record<string, unknown>) {
-			async function includeAsync(
+			async function include(
 				filePath: string,
 				includeData?: Record<string, unknown>
 			) {
@@ -501,7 +508,7 @@ export class Template {
 			}
 
 			console.log(fn.toString());
-			return fn(data ?? {}, escapeFn, { async: includeAsync }, rethrow);
+			return fn(data ?? {}, escapeFn, include, rethrow);
 		};
 
 		if (options.filename) {
@@ -520,44 +527,6 @@ export class Template {
 		}
 
 		return returnedFn;
-	}
-
-	/**
-	Compiles all calls to the special function `include` by prepending a top-level pre-processed include and replacing the include function with a synchronous version that references the files previously included
-	*/
-	compileIncludes() {
-		const includedFiles: string[] = [];
-
-		this.source.replace(
-			/include\(([\s\S]*?)\)/g,
-			(_match, includeString: string) => {
-				if (!includeString.startsWith("'") && includeString.startsWith('"')) {
-					throw new Error(
-						'Files included with `include()` may only be static strings. If you want to dynamically include a component, please use `await include.async()` instead.'
-					);
-				}
-
-				includedFiles.push(includeString.slice(1, -1));
-				return `__include(${includeString})`;
-			}
-		);
-
-		this.source =
-			outdent`
-				const __include = await (async () => {
-					const includedFiles = Object.fromEntries(
-						await Promise.all(
-							${JSON.stringify(includedFiles)}.map(
-								async (file) => [file, await include.async(file)]
-							)
-						)
-					);
-
-					return function include(file) {
-						return includedFiles[file];
-					}
-				})();
-			` + this.source;
 	}
 
 	generateSource() {
