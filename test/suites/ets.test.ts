@@ -400,7 +400,7 @@ describe('<%%', () => {
 		expect(await ets.render('<%%- "foo" %>')).toEqual('<%- "foo" %>');
 	});
 
-	test('work without an end tag', () => {
+	test('work without an end tag', async () => {
 		expect(ets.render('<%%')).toEqual('<%');
 		expect(
 			await ets.render({
@@ -412,90 +412,94 @@ describe('<%%', () => {
 	});
 });
 
-suite('%%>', () => {
-	test('produce literal', () => {
-		assert.equal(ets.render('%%>'), '%>');
-		assert.equal(ets.render('  >', {}, { delimiter: ' ' }), ' >');
+describe('%%>', () => {
+	test('produce literal', async () => {
+		expect(await ets.render('%%>')).toEqual('%>');
+		expect(
+			await ets.render({ template: '  >', options: { delimiter: ' ' } })
+		).toEqual(' >');
 	});
 });
 
-suite('<%_ and _%>', () => {
-	test('slurps spaces and tabs', () => {
-		assert.equal(
-			ets.render(fixture('space-and-tab-slurp.ets'), { users }),
-			fixture('space-and-tab-slurp.html')
-		);
+describe('<%_ and _%>', () => {
+	test('slurps spaces and tabs', async () => {
+		expect(
+			await ets.render({
+				template: fixture('space-and-tab-slurp.ets'),
+				data: { users },
+			})
+		).toEqual(fixture('space-and-tab-slurp.html'));
 	});
 });
 
-suite('single quotes', () => {
-	test('not mess up the constructed function', () => {
-		assert.equal(
-			ets.render(fixture('single-quote.ets')),
+describe('single quotes', () => {
+	test('not mess up the constructed function', async () => {
+		expect(await ets.render(fixture('single-quote.ets'))).toEqual(
 			fixture('single-quote.html')
 		);
 	});
 });
 
-suite('double quotes', () => {
-	test('not mess up the constructed function', () => {
-		assert.equal(
-			ets.render(fixture('double-quote.ets')),
+describe('double quotes', () => {
+	test('not mess up the constructed function', async () => {
+		expect(await ets.render(fixture('double-quote.ets'))).toEqual(
 			fixture('double-quote.html')
 		);
 	});
 });
 
-suite('backslashes', () => {
-	test('escape', () => {
-		assert.equal(
-			ets.render(fixture('backslash.ets')),
+describe('backslashes', () => {
+	test('escape', async () => {
+		expect(await ets.render(fixture('backslash.ets'))).toEqual(
 			fixture('backslash.html')
 		);
 	});
 });
 
-suite('messed up whitespace', () => {
-	test('work', () => {
-		assert.equal(
-			ets.render(fixture('messed.ets'), { users }),
-			fixture('messed.html')
-		);
+describe('messed up whitespace', () => {
+	test('work', async () => {
+		expect(
+			await ets.render({ template: fixture('messed.ets'), data: { users } })
+		).toEqual(fixture('messed.html'));
 	});
 });
 
-suite('exceptions', () => {
-	test('produce useful stack traces', () => {
+describe('exceptions', () => {
+	test('produce useful stack traces', async () => {
 		try {
-			ets.render(fixture('error.ets'), {}, { filename: 'error.ets' });
-		} catch (error) {
-			assert.equal(error.path, 'error.ets');
-			let errstck = error.stack.split('\n').slice(0, 8).join('\n');
-			errstck = errstck.replace(/\n/g, lf);
-			errstck = errstck.replace(/\r\r\n/g, lf);
-			assert.equal(errstck, fixture('error.out'));
+			await ets.render({
+				template: fixture('error.ets'),
+				options: { filename: 'error.ets' },
+			});
+		} catch (error: unknown) {
+			const err = error as { path: string; stack: string };
+			expect(err.path).toEqual('error.ets');
+			let errorStack = err.stack.split('\n').slice(0, 8).join('\n');
+			errorStack = errorStack.replace(/\n/g, '\n');
+			errorStack = errorStack.replace(/\r\r\n/g, '\n');
+			expect(errorStack).toEqual(fixture('error.out'));
 			return;
 		}
 
 		throw new Error('no error reported when there should be');
 	});
 
-	test('not include fancy stack info if compileDebug is false', () => {
+	test('not include fancy stack info if compileDebug is false', async () => {
 		try {
-			ets.render(
-				fixture('error.ets'),
-				{},
-				{
+			await ets.render({
+				template: fixture('error.ets'),
+				options: {
 					filename: 'error.ets',
 					compileDebug: false,
-				}
-			);
-		} catch (error) {
-			assert.ok(!error.path);
-			let errstck = error.stack.split('\n').slice(0, 8).join('\n');
-			errstck = errstck.replace(/\n/g, lf);
-			errstck = errstck.replace(/\r\r\n/g, lf);
-			assert.notEqual(errstck, fixture('error.out'));
+				},
+			});
+		} catch (error: unknown) {
+			const err = error as { path: string; stack: string };
+			expect(!err.path).toBe(true);
+			let errorStack = err.stack.split('\n').slice(0, 8).join('\n');
+			errorStack = errorStack.replace(/\n/g, '\n');
+			errorStack = errorStack.replace(/\r\r\n/g, '\n');
+			expect(errorStack).toEqual(fixture('error.out'));
 			return;
 		}
 
@@ -503,7 +507,7 @@ suite('exceptions', () => {
 	});
 
 	let unhook = null;
-	test('log JS source when debug is set', (done) => {
+	test('log JS source when debug is set', async () => {
 		let out = '';
 		let needToExit = false;
 		unhook = hook_stdio(process.stdout, (str) => {
@@ -522,29 +526,27 @@ suite('exceptions', () => {
 		ets.render(fixture('hello-world.ets'), {}, { debug: true });
 	});
 
-	test('escape filename in errors', () => {
-		assert.throws(() => {
-			ets.render(
-				'<% throw new Error("whoops"); %>',
-				{},
-				{ filename: '<script>' }
-			);
-		}, /Error: &lt;script&gt;/);
+	test('escape filename in errors', async () => {
+		await expect(async () => {
+			await ets.render({
+				template: '<% throw new Error("whoops"); %>',
+				options: { filename: '<script>' },
+			});
+		}).rejects.toThrow(/Error: &lt;script&gt;/);
 	});
 
-	test('filename in errors uses custom escape', () => {
-		assert.throws(() => {
-			ets.render(
-				'<% throw new Error("whoops"); %>',
-				{},
-				{
+	test('filename in errors uses custom escape', async () => {
+		await expect(async () => {
+			await ets.render({
+				template: '<% throw new Error("whoops"); %>',
+				options: {
 					filename: '<script>',
 					escape() {
 						return 'zooby';
 					},
-				}
-			);
-		}, /Error: zooby/);
+				},
+			});
+		}).rejects.toThrow(/Error: zooby/);
 	});
 
 	teardown(() => {
