@@ -336,6 +336,8 @@ const modes = {
 	LITERAL: 'literal',
 };
 
+const defaultImportResolve = (importString: string) => importString;
+
 export class Template {
 	mode: string | null = null;
 	truncate = false;
@@ -359,6 +361,7 @@ export class Template {
 			filename: opts.filename,
 			openDelimiter: opts.openDelimiter ?? DEFAULT_OPEN_DELIMITER,
 			includer: opts.includer,
+			importResolver: opts.importResolver ?? defaultImportResolve,
 			rmWhitespace: opts.rmWhitespace ?? false,
 			root: opts.root ?? '/',
 			outputFunctionName: opts.outputFunctionName,
@@ -399,6 +402,7 @@ export class Template {
 		let fn: ClientFunction;
 		const { options } = this;
 		const escapeFn = options.escape;
+		const { importResolver } = options;
 		let Ctor: FunctionConstructor;
 		const sanitizedFilename = options.filename
 			? JSON.stringify(options.filename)
@@ -406,6 +410,14 @@ export class Template {
 
 		if (!this.source) {
 			this.generateSource();
+
+			if (options.importResolver !== undefined) {
+				// Transform all dynamic imports from `import(...)` to `import(__importResolver(...))`
+				this.source = this.source.replace(
+					/import\(([\s\S]*?)\)/g,
+					'import(__importResolver($1))'
+				);
+			}
 
 			const { code } = await esbuild.transform(this.source, {
 				minify: false,
@@ -461,7 +473,7 @@ export class Template {
 			}.constructor as FunctionConstructor;
 
 			fn = new Ctor(
-				options.localsName + ', escapeFn, include, rethrow',
+				options.localsName + ', escapeFn, include, rethrow, __importResolver',
 				src
 			) as TemplateFunction;
 		} catch (error: unknown) {
@@ -499,7 +511,7 @@ export class Template {
 				return fileTemplateRenderFunction(d);
 			}
 
-			return fn(data ?? {}, escapeFn, include, rethrow);
+			return fn(data ?? {}, escapeFn, include, rethrow, importResolver);
 		};
 
 		if (options.filename) {

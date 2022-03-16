@@ -2,11 +2,15 @@ lockfileVersion: 5.3
 
 specifiers:
   cowsay: ^1.5.0
+  desm: ^1.2.0
   embedded-ts: link:../../../dist
 
 dependencies:
   cowsay: 1.5.0
   embedded-ts: link:../../../dist
+
+devDependencies:
+  desm: 1.2.0
 
 packages:
 
@@ -66,6 +70,10 @@ packages:
     resolution: {integrity: sha1-9lNNFRSCabIDUue+4m9QH5oZEpA=}
     engines: {node: '>=0.10.0'}
     dev: false
+
+  /desm/1.2.0:
+    resolution: {integrity: sha512-/sHgwtz8V4kzHc/cii4OTtpEssvYe/yDDlPnZyMP5wO5KXYGfUoh22n+8OMhepStjhq6o577SRgTrdfcRepDbw==}
+    dev: true
 
   /emoji-regex/8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}

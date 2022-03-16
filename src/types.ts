@@ -23,8 +23,11 @@ export type ClientFunction = (
 	locals?: Data,
 	escape?: EscapeCallback,
 	include?: AsyncIncludeCallback,
-	rethrow?: RethrowCallback
+	rethrow?: RethrowCallback,
+	importResolver?: ImportResolver
 ) => Promise<string>;
+
+type ImportResolver = (importString: string) => string;
 
 /**
  * Escapes a string using HTML/XML escaping rules.
@@ -197,4 +200,9 @@ export interface ETSOptions {
 	 * Custom function to handle ETS includes
 	 */
 	includer: IncluderCallback | undefined;
+
+	/**
+	Used for resolving dynamic imports
+	*/
+	importResolver: ImportResolver;
 }
