@@ -9,12 +9,12 @@ import * as ets from 'ets';
 
 console.log(
   await ets.render(`
-  <%
-    let x: string
-    x = "hello";
-  %>
-  <%= x %>
-`)
+    <%
+      let x: string
+      x = "hello";
+    %>
+    <%= x %>
+  `)
 );
 
 // Outputs: "hello"
