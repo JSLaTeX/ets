@@ -359,6 +359,7 @@ describe('-%>', () => {
 		).toEqual(fixture('no.newlines.html'));
 	});
 	test('stack traces work', async () => {
+		expect.hasAssertions();
 		try {
 			await ets.render(fixture('no.newlines.error.ets'));
 		} catch (error: unknown) {
@@ -368,8 +369,6 @@ describe('-%>', () => {
 
 			throw error;
 		}
-
-		throw new Error('Expected ReferenceError');
 	});
 
 	test('works with unix style', async () => {
@@ -472,6 +471,7 @@ describe('messed up whitespace', () => {
 
 describe('exceptions', () => {
 	test('produce useful stack traces', async () => {
+		expect.hasAssertions();
 		try {
 			await ets.render({
 				template: fixture('error.ets'),
@@ -484,13 +484,11 @@ describe('exceptions', () => {
 			errorStack = errorStack.replace(/\n/g, '\n');
 			errorStack = errorStack.replace(/\r\r\n/g, '\n');
 			expect(errorStack).toEqual(fixture('error.out'));
-			return;
 		}
-
-		throw new Error('no error reported when there should be');
 	});
 
 	test('not include fancy stack info if compileDebug is false', async () => {
+		expect.hasAssertions();
 		try {
 			await ets.render({
 				template: fixture('error.ets'),
@@ -506,10 +504,7 @@ describe('exceptions', () => {
 			errorStack = errorStack.replace(/\n/g, '\n');
 			errorStack = errorStack.replace(/\r\r\n/g, '\n');
 			expect(errorStack).toEqual(fixture('error.out'));
-			return;
 		}
-
-		throw new Error('no error reported when there should be');
 	});
 
 	let unhook: (() => void) | undefined;
@@ -623,25 +618,21 @@ describe('include()', () => {
 	});
 
 	test('include ets fails without `filename`', async () => {
+		expect.hasAssertions()
 		try {
 			await ets.render(fixture('include-simple.ets'));
 		} catch (error: unknown) {
 			expect((error as Error).message).to.include('Could not find');
-			return;
 		}
-
-		throw new Error('expected inclusion error');
 	});
 
 	test('show filename when including nonexistent file', async () => {
+		expect.hasAssertions();
 		try {
 			await ets.render(fixture('include-nonexistent.ets'));
 		} catch (error: unknown) {
 			expect((error as Error).message).to.include('nonexistent-file');
-			return;
 		}
-
-		throw new Error('expected inclusion error containing file name');
 	});
 
 	test('strips BOM', async () => {
@@ -769,6 +760,7 @@ describe('include()', () => {
 	});
 
 	test('pass compileDebug to include', async () => {
+		expect.hasAssertions();
 		const file = 'test/fixtures/include.ets';
 		const fn = await ets.compile(fixture('include.ets'), {
 			filename: file,
@@ -781,10 +773,7 @@ describe('include()', () => {
 		} catch (error: unknown) {
 			expect((error as Error).message).toEqual('pets is not defined');
 			expect((error as { path: string }).path).toBeDefined();
-			return;
 		}
-
-		throw new Error('no error reported when there should be');
 	});
 
 	test('is dynamic', async () => {
@@ -817,6 +806,7 @@ describe('include()', () => {
 	});
 
 	test('handles errors in included file', async () => {
+		expect.hasAssertions();
 		try {
 			await ets.render({
 				template: '<%- include("fixtures/include-with-error") %>',
@@ -824,10 +814,7 @@ describe('include()', () => {
 			});
 		} catch (error: unknown) {
 			expect((error as Error).message).to.include('foobar is not defined');
-			return;
 		}
-
-		throw new Error('expected inclusion error');
 	});
 });
 
