@@ -539,7 +539,7 @@ export class Template {
 		const matches = this.parseTemplateText();
 		const { delimiter: d, openDelimiter: o, closeDelimiter: c } = options;
 
-		if (matches && matches.length > 0) {
+		if (matches.length > 0) {
 			for (const [index, line] of matches.entries()) {
 				// If this is an opening tag, check for closing tags
 				// eslint-disable-next-line no-warning-comments
