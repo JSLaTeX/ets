@@ -162,9 +162,7 @@ export let closeDelimiter: string;
  */
 export let delimiter: string | undefined;
 
-export interface Data {
-	[name: string]: any;
-}
+export type Data = Record<string, any>;
 
 /**
  * This type of function is returned from `compile`, when
@@ -173,7 +171,7 @@ export interface Data {
  * @param data an object of data to be passed into the template.
  * @return Return type depends on `Options.async`.
  */
-export type TemplateFunction = (data?: Data) => string;
+export type TemplateFunction = (data?: Data) => Promise<string>;
 
 /**
  * This type of function is returned from `compile`, when
@@ -205,7 +203,7 @@ export type ClientFunction = (
 	escape?: EscapeCallback,
 	include?: IncludeCallback,
 	rethrow?: RethrowCallback
-) => string;
+) => Promise<string>;
 
 /**
  * This type of function is returned from `compile`, when
@@ -240,24 +238,26 @@ export type AsyncClientFunction = (
  */
 export type EscapeCallback = (markup?: any) => string;
 
+type RethrowProps = {
+	error: Error;
+	source: string;
+	filename: string;
+	lineno: number;
+	escape: EscapeCallback;
+};
+
 /**
  * This type of callback is used when `Options.compileDebug`
  * is `true`, and an error in the template is thrown.
  *
  * By default it is used to rethrow an error in a better-formatted way.
  *
- * @param err Error object
- * @param str full EJS source
- * @param filename file name of the EJS source
- * @param lineno line number of the error
+ * @param props.err Error object
+ * @param props.source full EJS source
+ * @param props.filename file name of the EJS source
+ * @param props.lineno line number of the error
  */
-export type RethrowCallback = (
-	err: Error,
-	str: string,
-	filename: string | null | undefined,
-	lineno: number,
-	esc: EscapeCallback
-) => never;
+export type RethrowCallback = (props: RethrowProps) => never;
 
 /**
  * The callback called by `ClientFunction` to include files at runtime with `include()`
@@ -266,7 +266,7 @@ export type RethrowCallback = (
  * @param data Data passed to the template
  * @return Contents of the file requested
  */
-export type IncludeCallback = (path: string, data?: Data) => string;
+export type IncludeCallback = (path: string, data?: Data) => Promise<string>;
 
 /**
  * An object where {@link filename} is the final parsed path or {@link template} is the content of the included template
@@ -386,14 +386,6 @@ export interface ETSOptions {
 	 * @default false
 	 */
 	cache: boolean;
-
-	/**
-	 * Whether or not to create an async function instead of a regular function.
-	 * This requires language support.
-	 *
-	 * @default false
-	 */
-	async: boolean;
 
 	/**
 	 * Make sure to set this to 'false' in order to skip UglifyJS parsing,

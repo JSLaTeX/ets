@@ -27,6 +27,7 @@
 	"devDependencies": {
 		"@commitlint/cli": "^15.0.0",
 		"@leonzalion/configs": "latest",
+		"@types/lru-cache": "^7.4.0",
 		"@types/node": "^17.0.0",
 		"@types/xml-escape": "^1.1.0",
 		"desm": "^1.2.0",
@@ -55,7 +56,9 @@
 	},
 	"dependencies": {
 		"change-case": "^4.1.2",
+		"esbuild": "^0.14.27",
 		"escape-string-regexp": "^5.0.0",
+		"lru-cache": "^7.5.1",
 		"outdent": "^0.8.0",
 		"xml-escape": "^1.1.0"
 	}

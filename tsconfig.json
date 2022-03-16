@@ -2,11 +2,17 @@
 	"extends": "@leonzalion/configs/tsconfig.json",
 	"compilerOptions": {
 		"esModuleInterop": true,
+		"downlevelIteration": true,
 		"outDir": "dist",
 		"baseUrl": ".",
 		"paths": {
-			"~/*": ["./src/*"]
+			"~/*": [
+				"./src/*"
+			]
 		}
 	},
-	"include": ["./src", "./typings"]
+	"include": [
+		"./src",
+		"./typings"
+	]
 }

@@ -3,24 +3,30 @@ import * as path from 'node:path';
 import { outdent } from 'outdent';
 import xmlEscape from 'xml-escape';
 import escapeStringRegexp from 'escape-string-regexp';
-import type { ClientFunction, EscapeCallback, ETSOptions } from '~/types.js';
+import LRUCache from 'lru-cache';
+import esbuild from 'esbuild';
+import type {
+	ClientFunction,
+	EscapeCallback,
+	ETSOptions,
+	TemplateFunction,
+} from '~/types.js';
 
 const VERSION_STRING = '1.0.0'; // require('../package.json').version;
 const DEFAULT_OPEN_DELIMITER = '<';
 const DEFAULT_CLOSE_DELIMITER = '>';
 const DEFAULT_DELIMITER = '%';
 const DEFAULT_LOCALS_NAME = 'locals';
-const NAME = 'ejs';
 const REGEX_STRING = '(<%%|%%>|<%=|<%-|<%_|<%#|<%|%>|-%>|_%>)';
 const BOM = /^\uFEFF/;
 const JS_IDENTIFIER_REGEX = /^[a-zA-Z_$][\w$]*$/;
 
 /**
- * EJS template function cache. This can be a LRU object from lru-cache NPM
+ * ETS template function cache. This can be a LRU object from lru-cache NPM
  * module. By default, it is {@link module:utils.cache}, a simple in-process
  * cache that grows continuously.
  */
-const cache = new Map<string, unknown>();
+const cache = new LRUCache<string, ClientFunction | TemplateFunction>();
 
 /**
  * Get the path to the included file from the parent file path and the
@@ -37,7 +43,7 @@ export function resolveInclude(
 	);
 	const ext = path.extname(name);
 	if (!ext) {
-		includePath += '.ejs';
+		includePath += '.ets';
 	}
 
 	return includePath;
@@ -63,7 +69,10 @@ function resolvePaths(name: string, paths: string[]): string {
  * @param  path    specified path
  * @param  options compilation options
  */
-function getIncludePath(origPath: string, options: ETSOptions): string {
+function getIncludePath(
+	origPath: string,
+	options: ETSOptions
+): string | undefined {
 	let includePath: string | undefined;
 	let filePath: string;
 	const { views } = options;
@@ -93,14 +102,35 @@ function getIncludePath(origPath: string, options: ETSOptions): string {
 			includePath = resolvePaths(origPath, views);
 		}
 
-		if (!includePath && typeof options.includer !== 'function') {
+		if (includePath === undefined && typeof options.includer !== 'function') {
 			throw new Error(
-				'Could not find the include file "' + options.escape(origPath) + '"'
+				`Could not find the include file "${options.escape(origPath)}"`
 			);
 		}
 	}
 
 	return includePath;
+}
+
+/**
+Render an ETS file at the given `path`.
+*/
+type RenderFileProps = {
+	filePath: string;
+	data: Record<string, unknown>;
+	options: Omit<ETSOptions, 'filename'>;
+};
+
+export async function renderFile({
+	filePath,
+	data,
+	options,
+}: RenderFileProps): Promise<string> {
+	const templateRenderFunction = await handleCache({
+		...options,
+		filename: filePath,
+	});
+	return templateRenderFunction(data);
 }
 
 /**
@@ -114,44 +144,46 @@ function getIncludePath(origPath: string, options: ETSOptions): string {
  * `options.filename` so it must be set prior to calling this function.
  *
  * @param options   compilation options
- * @param [template] template source
- * @return {(TemplateFunction|ClientFunction)}
- * Depending on the value of `options.client`, either type might be returned.
- * @static
+ * @param template source
  */
 
-function handleCache(options: ETSOptions, template: string) {
-	let func;
+async function handleCache(
+	options: Partial<ETSOptions>,
+	template?: string
+): Promise<TemplateFunction | ClientFunction> {
+	let templateRenderFunction: TemplateFunction | ClientFunction | undefined;
 	const { filename } = options;
-	const hasTemplate = arguments.length > 1;
+	const hasTemplate = template !== undefined;
 
 	if (options.cache) {
 		if (!filename) {
 			throw new Error('cache option requires a filename');
 		}
 
-		func = cache.get(filename);
-		if (func) {
-			return func;
+		templateRenderFunction = cache.get(filename);
+		if (templateRenderFunction !== undefined) {
+			return templateRenderFunction;
 		}
 
 		if (!hasTemplate) {
-			template = fileLoader(filename).toString().replace(_BOM, '');
+			template = await fs.promises.readFile(filename, 'utf-8');
+			template = template.replace(BOM, '');
 		}
 	} else if (!hasTemplate) {
 		if (!filename) {
-			throw new Error('Internal EJS error: no file name or template provided');
+			throw new Error('Internal ETS error: no file name or template provided');
 		}
 
-		template = fileLoader(filename).toString().replace(_BOM, '');
+		template = await fs.promises.readFile(filename, 'utf8');
+		template = template.replace(BOM, '');
 	}
 
-	func = compile(template, options);
+	templateRenderFunction = await compile(template!, options);
 	if (options.cache) {
-		cache.set(filename, func);
+		cache.set(filename!, templateRenderFunction);
 	}
 
-	return func;
+	return templateRenderFunction;
 }
 
 /**
@@ -162,13 +194,15 @@ If `options.cache` is `true`, then the template is cached.
 @return {(TemplateFunction|ClientFunction)}
 Depending on the value of `options.client`, either type might be returned
 @static
- */
-
-function includeFile(filePath: string, options: ETSOptions) {
+*/
+async function includeFile(
+	filePath: string,
+	options: ETSOptions
+): Promise<ClientFunction> {
 	const opts = { ...options };
 	opts.filename = getIncludePath(filePath, opts);
 	if (typeof options.includer === 'function') {
-		const includerResult = options.includer(filePath, opts.filename);
+		const includerResult = options.includer(filePath, opts.filename!);
 		if (includerResult) {
 			if (includerResult.filename) {
 				opts.filename = includerResult.filename;
@@ -180,7 +214,8 @@ function includeFile(filePath: string, options: ETSOptions) {
 		}
 	}
 
-	return handleCache(opts);
+	const templateRenderFunction = await handleCache(opts);
+	return templateRenderFunction;
 }
 
 type RethrowProps = {
@@ -192,10 +227,16 @@ type RethrowProps = {
 };
 
 /**
-Re-throw the given `err` in context to the `str` of ejs, `filename`, and
+Re-throw the given `err` in context to the `str` of ets, `filename`, and
 `lineno`.
 */
-function rethrow({ error, source, filename, lineno, escape }: RethrowProps) {
+function rethrow({
+	error,
+	source,
+	filename,
+	lineno,
+	escape,
+}: RethrowProps): never {
 	const lines = source.split('\n');
 	const start = Math.max(lineno - 3, 0);
 	const end = Math.min(lines.length, lineno + 3);
@@ -215,7 +256,7 @@ function rethrow({ error, source, filename, lineno, escape }: RethrowProps) {
 	// Alter exception message
 	(error as any).path = filename;
 	error.message = outdent`
-		${filename ?? 'ejs'}:${lineno}
+		${filename ?? 'ets'}:${lineno}
 		${context}
 
 		${error.message}
@@ -229,56 +270,61 @@ function stripSemi(str: string) {
 }
 
 /**
- * Compile the given `str` of ejs into a template function.
- * @param template EJS template
- * @param compilation options
- * @return {(TemplateFunction|ClientFunction)}
- * Depending on the value of `opts.client`, either type might be returned.
- * Note that the return type of the function also depends on the value of `opts.async`.
- * @public
- */
-
-export function compile(template: string, options: Partial<ETSOptions>) {
+Compile the given `str` of ets into a template function.
+@param template ETS template
+@param compilation options
+*/
+export async function compile(
+	template: string,
+	options: Partial<ETSOptions> & { client: true }
+): Promise<ClientFunction>;
+export async function compile(
+	template: string,
+	options: Partial<ETSOptions> & { client: false }
+): Promise<TemplateFunction>;
+export async function compile(
+	template: string,
+	options: Partial<ETSOptions>
+): Promise<TemplateFunction | ClientFunction>;
+export async function compile(
+	template: string,
+	options: Partial<ETSOptions>
+): Promise<TemplateFunction | ClientFunction> {
 	return new Template(template, options).compile();
 }
 
-/**
- * Render the given `template` of ejs.
- *
- * If you would like to include options but not data, you need to explicitly
- * call this function with `data` being an empty object or `null`.
- *
- * @param {String}   template EJS template
- * @param {Object}  [data={}] template data
- * @param {Options} [opts={}] compilation and rendering options
- * @return {(String|Promise<String>)}
- * Return value type depends on `opts.async`.
- * @public
- */
-
 type RenderProps = {
 	template: string;
-	data: string;
+	data: Record<string, unknown>;
 	options: Partial<ETSOptions>;
 };
 
-export function render({ template, data, options }: RenderProps) {
-	return handleCache(options, template)(data);
+/**
+Render the given `template` of ets.
+
+If you would like to include options but not data, you need to explicitly
+call this function with `data` being an empty object or `null`.
+
+@param template ETS template
+@param template data
+@param compilation and rendering options
+@public
+*/
+export async function render({
+	template,
+	data,
+	options,
+}: RenderProps): Promise<string> {
+	const templateRenderFunction = await handleCache(options, template);
+	return templateRenderFunction(data);
 }
 
 /**
  * Clear intermediate JavaScript cache. Calls {@link Cache#reset}.
  * @public
  */
-
-/**
- * EJS template class
- * @public
- */
-exports.Template = Template;
-
 export function clearCache() {
-	cache.reset();
+	cache.clear();
 }
 
 const modes = {
@@ -301,7 +347,6 @@ export class Template {
 	constructor(text: string, opts: Partial<ETSOptions> = {}) {
 		this.templateText = text;
 		this.options = {
-			async: opts.async ?? false,
 			beautify: opts.beautify ?? false,
 			cache: opts.cache ?? false,
 			client: opts.client ?? false,
@@ -334,7 +379,7 @@ export class Template {
 	}
 
 	// eslint-disable-next-line complexity
-	compile() {
+	async compile(): Promise<ClientFunction | TemplateFunction> {
 		let src: string;
 		let fn: ClientFunction;
 		const { options } = this;
@@ -422,14 +467,17 @@ export class Template {
 			src += `\n//# sourceURL=${sanitizedFilename}\n`;
 		}
 
+		const { code } = await esbuild.transform(src, {
+			minify: false,
+			keepNames: true,
+			loader: 'ts',
+		});
+		src = code;
+
 		try {
-			if (options.async) {
-				Ctor = async function () {
-					/* noop */
-				}.constructor as FunctionConstructor;
-			} else {
-				Ctor = Function;
-			}
+			Ctor = async function () {
+				/* noop */
+			}.constructor as FunctionConstructor;
 
 			fn = new Ctor(
 				options.localsName + ', escapeFn, include, rethrow',
@@ -442,19 +490,11 @@ export class Template {
 				}
 
 				error.message += outdent`
-					${outdent}
-					 while compiling ejs
+					while compiling ets
 
 					If the above error is not helpful, you may want to try EJS-Lint:
 					https://github.com/RyanZim/EJS-Lint
 				`;
-
-				if (!options.async) {
-					error.message += '\n';
-					error.message += outdent`
-						Or, if you meant to create an async function, pass \`async: true\` as an option.
-					`;
-				}
 			}
 
 			throw error;
@@ -465,28 +505,28 @@ export class Template {
 		// Adds a local `include` function which allows full recursive include
 		const returnedFn = options.client
 			? fn
-			: function anonymous(data) {
-					const include = function (
+			: async function (data?: Record<string, unknown>) {
+					async function include(
 						filePath: string,
-						includeData: Record<string, unknown>
+						includeData?: Record<string, unknown>
 					) {
 						let d = { ...data };
 						if (includeData) {
 							d = { ...d, ...includeData };
 						}
 
-						return includeFile(filePath, options)(d);
-					};
+						const fileTemplateRenderFunction = await includeFile(
+							filePath,
+							options
+						);
 
-					return fn.apply(options.context, [
-						data ?? {},
-						escapeFn,
-						include,
-						rethrow,
-					]);
+						return fileTemplateRenderFunction(d);
+					}
+
+					return fn(data ?? {}, escapeFn, include, rethrow);
 			  };
 
-		if (options.filename && typeof Object.defineProperty === 'function') {
+		if (options.filename) {
 			const { filename } = options;
 			const basename = path.basename(filename, path.extname(filename));
 			try {
@@ -603,7 +643,7 @@ export class Template {
 		// Escape double-quotes
 		// - this will be the delimiter during execution
 		line = line.replace(/"/g, '\\"');
-		this.source += '    ; __append("' + line + '")' + '\n';
+		this.source += `    ; __append("${line}")\n`;
 	}
 
 	// eslint-disable-next-line complexity
@@ -698,12 +738,6 @@ export class Template {
 }
 
 /**
- * Version of EJS.
+ * Version of ETS.
  */
-export const VERSION = VERSION_STRING;
-
-/**
- * Name for detection of EJS.
- */
-
-export const name = NAME;
+export const version = VERSION_STRING;
