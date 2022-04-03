@@ -1,4 +1,4 @@
-# Embedded TS (ETS)
+# Embedded TypeScript (ETS)
 
 A port of [EJS](https://ejs.co) to support embedded TypeScript.
 
