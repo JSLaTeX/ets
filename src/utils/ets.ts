@@ -1,5 +1,5 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+/* eslint-disable @typescript-eslint/consistent-type-imports */
+
 import escapeStringRegexp from 'escape-string-regexp';
 import LRUCache from 'lru-cache';
 import { outdent } from 'outdent';
@@ -10,6 +10,16 @@ import type {
 	ETSOptions,
 	TemplateFunction,
 } from '~/types.js';
+
+let fs: typeof import('node:fs');
+if (typeof window === 'undefined') {
+	fs = await import('node:fs');
+}
+
+let path: typeof import('node:path');
+if (typeof window === 'undefined') {
+	path = await import('node:path');
+}
 
 const DEFAULT_OPEN_DELIMITER = '<';
 const DEFAULT_CLOSE_DELIMITER = '>';
