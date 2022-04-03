@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import esbuild from 'esbuild';
 import escapeStringRegexp from 'escape-string-regexp';
 import LRUCache from 'lru-cache';
 import { outdent } from 'outdent';
@@ -367,6 +366,7 @@ export class Template {
 			outputFunctionName: opts.outputFunctionName,
 			localsName: opts.localsName ?? DEFAULT_LOCALS_NAME,
 			views: opts.views,
+			transform: opts.transform,
 		};
 
 		if (
@@ -419,11 +419,17 @@ export class Template {
 				);
 			}
 
-			const { code } = await esbuild.transform(this.source, {
-				minify: false,
-				keepNames: true,
-				loader: 'ts',
-			});
+			let code: string;
+			if (options.transform === undefined) {
+				const { default: esbuild } = await import('esbuild');
+				({ code } = await esbuild.transform(this.source, {
+					minify: false,
+					keepNames: true,
+					loader: 'ts',
+				}));
+			} else {
+				code = await options.transform(this.source);
+			}
 
 			this.source = outdent`
 				var __output = "";

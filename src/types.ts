@@ -205,4 +205,9 @@ export interface ETSOptions {
 	Used for resolving dynamic imports
 	*/
 	importResolver: ImportResolver;
+
+	/**
+	 * A custom transform function for transforming the compiled template source code
+	 */
+	transform?: (source: string) => string | Promise<string>;
 }
