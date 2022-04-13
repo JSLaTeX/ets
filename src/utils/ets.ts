@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/consistent-type-imports */
-
 import escapeStringRegexp from 'escape-string-regexp';
 import LRUCache from 'lru-cache';
 import { outdent } from 'outdent';
@@ -10,16 +8,6 @@ import type {
 	ETSOptions,
 	TemplateFunction,
 } from '~/types.js';
-
-let fs: typeof import('node:fs');
-if (typeof window === 'undefined') {
-	fs = await import('node:fs');
-}
-
-let path: typeof import('node:path');
-if (typeof window === 'undefined') {
-	path = await import('node:path');
-}
 
 const DEFAULT_OPEN_DELIMITER = '<';
 const DEFAULT_CLOSE_DELIMITER = '>';
@@ -50,11 +38,13 @@ const cache = new LRUCache<string, TemplateFunction>({
  * Get the path to the included file from the parent file path and the
  * specified path.
  */
-export function resolveInclude(
+export async function resolveInclude(
 	name: string,
 	filename: string,
 	isDir?: boolean
-): string {
+): Promise<string> {
+	const path = await import('node:path');
+
 	let includePath = path.resolve(
 		isDir ? filename : path.dirname(filename),
 		name
@@ -70,9 +60,11 @@ export function resolveInclude(
 /**
  * Try to resolve file path on multiple directories
  */
-function resolvePaths(name: string, paths: string[]): string {
+async function resolvePaths(name: string, paths: string[]): Promise<string> {
+	const fs = await import('node:fs');
 	for (let filePath of paths) {
-		filePath = resolveInclude(name, filePath, true);
+		// eslint-disable-next-line no-await-in-loop
+		filePath = await resolveInclude(name, filePath, true);
 		if (fs.existsSync(filePath)) {
 			return filePath;
 		}
@@ -87,10 +79,10 @@ function resolvePaths(name: string, paths: string[]): string {
  * @param  path    specified path
  * @param  options compilation options
  */
-function getIncludePath(
+async function getIncludePath(
 	origPath: string,
 	options: ETSOptions
-): string | undefined {
+): Promise<string | undefined> {
 	let includePath: string | undefined;
 	let filePath: string;
 	const { views } = options;
@@ -100,16 +92,17 @@ function getIncludePath(
 	if (match && match.length > 0) {
 		origPath = origPath.replace(/^\/*/, '');
 		if (Array.isArray(options.root)) {
-			includePath = resolvePaths(origPath, options.root);
+			includePath = await resolvePaths(origPath, options.root);
 		} else {
-			includePath = resolveInclude(origPath, options.root, true);
+			includePath = await resolveInclude(origPath, options.root, true);
 		}
 	}
 	// Relative paths
 	else {
 		// Look relative to a passed filename first
 		if (options.filename) {
-			filePath = resolveInclude(origPath, options.filename);
+			filePath = await resolveInclude(origPath, options.filename);
+			const fs = await import('node:fs');
 			if (fs.existsSync(filePath)) {
 				includePath = filePath;
 			}
@@ -117,7 +110,7 @@ function getIncludePath(
 
 		// Then look in any views directories
 		if (includePath === undefined && Array.isArray(views)) {
-			includePath = resolvePaths(origPath, views);
+			includePath = await resolvePaths(origPath, views);
 		}
 
 		if (includePath === undefined && typeof options.includer !== 'function') {
@@ -175,6 +168,7 @@ async function handleCache(
 	options: Partial<ETSOptions>,
 	template?: string
 ): Promise<TemplateFunction> {
+	const fs = await import('node:fs');
 	let templateRenderFunction: TemplateFunction | undefined;
 	const { filename } = options;
 	const hasTemplate = template !== undefined;
@@ -222,7 +216,7 @@ async function includeFile(
 	options: ETSOptions
 ): Promise<TemplateFunction> {
 	const opts = { ...options };
-	opts.filename = getIncludePath(filePath, opts);
+	opts.filename = await getIncludePath(filePath, opts);
 	if (typeof options.includer === 'function') {
 		const includerResult = await options.includer(filePath, opts.filename!);
 		if (includerResult) {
@@ -532,6 +526,7 @@ export class Template {
 
 		if (options.filename) {
 			const { filename } = options;
+			const path = await import('node:path');
 			const basename = path.basename(filename, path.extname(filename));
 			try {
 				Object.defineProperty(returnedFn, 'name', {

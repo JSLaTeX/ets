@@ -25,7 +25,7 @@
 		"start": "node-ts ./src/index.ts",
 		"test": "vitest run",
 		"lint": "eslint --cache --fix .",
-		"prettier": "prettier --write .",
+		"prettier": "echo 0",
 		"tc": "tsc --noEmit"
 	},
 	"devDependencies": {
