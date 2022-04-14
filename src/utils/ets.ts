@@ -169,7 +169,6 @@ async function handleCache(
 	options: Partial<ETSOptions>,
 	template?: string
 ): Promise<TemplateFunction> {
-	const fs = await import('node:fs');
 	let templateRenderFunction: TemplateFunction | undefined;
 	const { filename } = options;
 	const hasTemplate = template !== undefined;
@@ -185,6 +184,7 @@ async function handleCache(
 		}
 
 		if (!hasTemplate) {
+			const fs = await import('node:fs');
 			template = await fs.promises.readFile(filename, 'utf-8');
 			template = template.replace(BOM, '');
 		}
@@ -193,6 +193,7 @@ async function handleCache(
 			throw new Error('Internal ETS error: no file name or template provided');
 		}
 
+		const fs = await import('node:fs');
 		template = await fs.promises.readFile(filename, 'utf8');
 		template = template.replace(BOM, '');
 	}
