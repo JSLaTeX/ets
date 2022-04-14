@@ -8,7 +8,7 @@ A port of [EJS](https://ejs.co) to support embedded TypeScript.
 import * as ets from 'embedded-ts';
 
 console.log(
-	await ets.render(`
+  await ets.render(`
     <%
       let x: string
       x = "hello";
