@@ -12,7 +12,7 @@ specifiers:
   escape-string-regexp: ^5.0.0
   eslint-define-config: ^1.3.0
   execa: ^6.1.0
-  lion-system: ^1.3.8
+  lion-system: ^1.3.9
   lru-cache: ^7.8.1
   outdent: ^0.8.0
   tslib: ^2.3.1
@@ -37,7 +37,7 @@ devDependencies:
   desm: 1.2.0
   eslint-define-config: 1.3.0
   execa: 6.1.0
-  lion-system: 1.3.8_typescript@4.6.3
+  lion-system: 1.3.9_typescript@4.6.3
   tslib: 2.3.1
   typescript: 4.6.3
   vitest: 0.9.3
@@ -296,7 +296,7 @@ packages:
       is-ci: 3.0.1
       lint-staged: 12.3.7
       lion-git-hooks: 1.0.9
-      lion-system: 1.3.8_typescript@4.6.3
+      lion-system: 1.3.9_typescript@4.6.3
       lionp: 1.0.24_typescript@4.6.3
       log-symbols: 5.1.0
       markdownlint-cli: 0.31.1
@@ -3439,8 +3439,8 @@ packages:
       pkg-dir: 6.0.1
     dev: true
 
-  /lion-system/1.3.8_typescript@4.6.3:
-    resolution: {integrity: sha512-GVi5yYsTCJjkQMG0/RTeUwGm9Bv7qJfgGYnJJcXFeaOSaAykx6GvXMWQEUxii9NlPAcKmBpYn8sGmllkyQp80Q==}
+  /lion-system/1.3.9_typescript@4.6.3:
+    resolution: {integrity: sha512-UKvoAMTDtolpOXH2hG4t5GfLTgmjyE+qAS64aO8XBB0AYdUzLpAJ600SreblsHeJG3ugXvGJJq4KEyaGAy6Vqg==}
     dependencies:
       '@rollup/plugin-commonjs': 21.0.3_rollup@2.70.1
       '@rollup/plugin-json': 4.1.0_rollup@2.70.1
@@ -3478,7 +3478,7 @@ packages:
       is-interactive: 2.0.0
       is-scoped: 3.0.0
       issue-regex: 4.0.0
-      lion-system: 1.3.8_typescript@4.6.3
+      lion-system: 1.3.9_typescript@4.6.3
       listr2: 4.0.5_enquirer@2.3.6
       log-symbols: 5.1.0
       meow: 10.1.2
