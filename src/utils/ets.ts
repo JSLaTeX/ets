@@ -2,6 +2,7 @@ import escapeStringRegexp from 'escape-string-regexp';
 import LRUCache from 'lru-cache';
 import { outdent } from 'outdent';
 import xmlEscape from 'xml-escape';
+
 import type {
 	ClientFunction,
 	EscapeCallback,

@@ -1,8 +1,9 @@
-import * as process from 'node:process';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import { describe, test, expect, afterEach, beforeAll } from 'vitest';
 import { join } from 'desm';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as process from 'node:process';
+import { afterEach, beforeAll, describe, expect, test } from 'vitest';
+
 import * as ets from '~/index.js';
 
 const users = [{ name: 'geddy' }, { name: 'neil' }, { name: 'alex' }];

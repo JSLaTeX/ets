@@ -1,5 +1,6 @@
-import * as fs from 'node:fs';
 import { join } from 'desm';
+import * as fs from 'node:fs';
+
 import * as ets from '~/index.js';
 
 const output = await ets.render(

@@ -1,7 +1,8 @@
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import { test } from 'vitest';
 import { join } from 'desm';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { test } from 'vitest';
+
 import * as ets from '~/index.js';
 
 const fixturesPath = join(import.meta.url, '../fixtures');
