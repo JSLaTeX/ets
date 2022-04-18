@@ -1,2 +1,2 @@
-export type { ETSOptions } from './types.js';
+export type { ETSOptions, TemplateFunction } from './types.js';
 export { compile, render, renderFile } from './utils/ets.js';
