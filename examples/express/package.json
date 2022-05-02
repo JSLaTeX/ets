@@ -1,0 +1,11 @@
+{
+	"name": "@ets/example-express",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js"
+	},
+	"dependencies": {
+		"express": "^4.18.1",
+		"embedded-ts": "link:../../dist"
+	}
+}
