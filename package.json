@@ -27,7 +27,7 @@
 		"test": "vitest run",
 		"lint": "eslint --cache --fix .",
 		"prettier": "prettier --write .",
-		"tc": "tsc --noEmit"
+		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
 		"@types/lru-cache": "^7.6.1",
