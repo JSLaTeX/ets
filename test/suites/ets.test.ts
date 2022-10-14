@@ -1,7 +1,8 @@
-import { join } from 'desm';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as process from 'node:process';
+
+import { join } from 'desm';
 import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 
 import * as ets from '~/index.js';
@@ -76,7 +77,7 @@ describe('ets.compile(string, options)', () => {
 	});
 
 	test('support custom escape function', async () => {
-		const customEscape = (str: string) => str?.toUpperCase() ?? '';
+		const customEscape = (str: string) => str.toUpperCase();
 
 		const fn = await ets.compile('HELLO <%= name %>', { escape: customEscape });
 		expect(await fn({ name: 'world' })).toEqual('HELLO WORLD');
@@ -240,7 +241,7 @@ describe('<%=', () => {
 	});
 
 	test('should accept custom function', async () => {
-		const customEscape = (str: string) => str?.toUpperCase() ?? '';
+		const customEscape = (str: string) => str.toUpperCase();
 
 		expect(
 			await ets.render({

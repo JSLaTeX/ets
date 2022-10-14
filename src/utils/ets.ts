@@ -185,7 +185,7 @@ async function handleCache(
 
 		if (!hasTemplate) {
 			const fs = await import('node:fs');
-			template = await fs.promises.readFile(filename, 'utf-8');
+			template = await fs.promises.readFile(filename, 'utf8');
 			template = template.replace(BOM, '');
 		}
 	} else if (!hasTemplate) {
@@ -221,14 +221,12 @@ async function includeFile(
 	opts.filename = await getIncludePath(filePath, opts);
 	if (typeof options.includer === 'function') {
 		const includerResult = await options.includer(filePath, opts.filename!);
-		if (includerResult) {
-			if (includerResult.filename) {
-				opts.filename = includerResult.filename;
-			}
+		if (includerResult.filename) {
+			opts.filename = includerResult.filename;
+		}
 
-			if (includerResult.template) {
-				return handleCache(opts, includerResult.template);
-			}
+		if (includerResult.template) {
+			return handleCache(opts, includerResult.template);
 		}
 	}
 
@@ -236,13 +234,13 @@ async function includeFile(
 	return templateRenderFunction;
 }
 
-type RethrowProps = {
+interface RethrowProps {
 	error: Error;
 	source: string;
 	filename: string;
 	lineno: number;
 	escape: EscapeCallback;
-};
+}
 
 /**
 Re-throw the given `err` in context to the `str` of ets, `filename`, and
@@ -274,7 +272,7 @@ function rethrow({
 	// Alter exception message
 	(error as any).path = filename;
 	error.message = outdent`
-		${filename ?? 'ets'}:${lineno}
+		${filename === '' ? 'ets' : filename}:${lineno}
 		${context}
 
 		${error.message}
@@ -417,13 +415,11 @@ export class Template {
 		if (!this.source) {
 			this.generateSource();
 
-			if (options.importResolver !== undefined) {
-				// Transform all dynamic imports from `import(...)` to `import(__importResolver(...))`
-				this.source = this.source.replace(
-					/import\(([\s\S]*?)\)/g,
-					'import(__importResolver($1))'
-				);
-			}
+			// Transform all dynamic imports from `import(...)` to `import(__importResolver(...))`
+			this.source = this.source.replace(
+				/import\(([\s\S]*?)\)/g,
+				'import(__importResolver($1))'
+			);
 
 			let code: string;
 			if (options.transform === undefined) {
