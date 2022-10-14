@@ -1,6 +1,7 @@
+import { createRequire } from 'node:module';
+
 import { join } from 'desm';
 import * as ets from 'embedded-ts';
-import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 

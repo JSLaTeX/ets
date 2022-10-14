@@ -1,5 +1,6 @@
-import { join } from 'desm';
 import * as fs from 'node:fs';
+
+import { join } from 'desm';
 
 import * as ets from '~/index.js';
 

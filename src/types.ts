@@ -39,13 +39,13 @@ type ImportResolver = (importString: string) => string;
  */
 export type EscapeCallback = (markup?: any) => string;
 
-type RethrowProps = {
+interface RethrowProps {
 	error: Error;
 	source: string;
 	filename: string;
 	lineno: number;
 	escape: EscapeCallback;
-};
+}
 
 /**
  * This type of callback is used when `Options.compileDebug`

@@ -1,5 +1,6 @@
-import { program } from 'commander';
 import * as fs from 'node:fs';
+
+import { program } from 'commander';
 
 import { renderFile } from '~/utils/ets.js';
 
