@@ -1,7 +1,7 @@
 {
 	"name": "embedded-ts",
 	"type": "module",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"description": "Embedded TypeScript.",
 	"license": "MIT",
 	"author": {

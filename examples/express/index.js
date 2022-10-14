@@ -1,6 +1,6 @@
 const express = require('express');
 const ets = require('embedded-ts');
-const fs = require('fs');
+const fs = require('node:fs');
 
 const app = express();
 
