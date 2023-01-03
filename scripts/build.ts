@@ -1,8 +1,5 @@
-import { execaCommandSync as exec } from 'execa';
-import { chProjectDir, copyPackageFiles, rmDist } from 'lionconfig';
+import { copyPackageFiles, rmDist, tsc } from 'lionconfig';
 
-chProjectDir(import.meta.url);
 rmDist();
-exec('tsc');
-exec('tsc-alias');
+await tsc()
 await copyPackageFiles({ commonjs: { external: 'esbuild' } });
