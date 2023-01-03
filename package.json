@@ -19,11 +19,9 @@
 	},
 	"homepage": "https://github.com/leonzalion/ets#readme",
 	"scripts": {
-		"preinstall": "pnpm build",
-		"prepare": "lion-git-hooks",
 		"release": "lionp",
-		"build": "node-ts ./scripts/build.ts",
-		"start": "node-ts ./src/index.ts",
+		"build": "ts-node ./scripts/build.ts",
+		"start": "ts-node ./src/index.ts",
 		"test": "vitest run",
 		"lint": "eslint --cache --fix .",
 		"prettier": "prettier --write .",
