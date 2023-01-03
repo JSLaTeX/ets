@@ -423,7 +423,13 @@ export class Template {
 
 			let code: string;
 			if (options.transform === undefined) {
-				const { default: esbuild } = await import('esbuild');
+				let esbuild: typeof import('esbuild');
+				if (typeof window === 'undefined') {
+					({ default: esbuild } = await import('esbuild'));
+				} else {
+					({ default: esbuild } = await import('esbuild-wasm'))
+				}
+
 				({ code } = await esbuild.transform(this.source, {
 					minify: false,
 					keepNames: true,
